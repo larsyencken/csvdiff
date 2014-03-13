@@ -23,10 +23,17 @@ def csvdiff(lhs, rhs, indexes):
     lhs_recs = load_records(lhs, indexes)
     rhs_recs = load_records(rhs, indexes)
 
+    return diff_records(lhs_recs, rhs_recs)
+
+
+def diff_records(lhs_recs, rhs_recs):
+    # examine keys for overlap
     removed, added, shared = diff_keys(lhs_recs, rhs_recs)
 
+    # check for changed rows
     changed = diff_shared(lhs_recs, rhs_recs, shared)
 
+    # summarize changes
     diff = diff_summary(removed, added, changed, lhs_recs, rhs_recs)
 
     return diff
