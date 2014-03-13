@@ -23,7 +23,9 @@ def csvdiff(lhs, rhs, indexes):
     lhs_recs = load_records(lhs, indexes)
     rhs_recs = load_records(rhs, indexes)
 
-    return diff_records(lhs_recs, rhs_recs)
+    orig_size = len(lhs_recs)
+
+    return diff_records(lhs_recs, rhs_recs), orig_size
 
 
 def diff_records(lhs_recs, rhs_recs):
@@ -84,15 +86,25 @@ def rec_diff(lhs, rhs):
     return delta
 
 
-def summarize_diff(diff, stream=sys.stdout):
+def summarize_diff(diff, orig_size, stream=sys.stdout):
+    if orig_size == 0:
+        # slightly arbitrary when the original data was empty
+        orig_size = 1
+
     n_removed = len(diff['removed'])
     n_added = len(diff['added'])
     n_changed = len(diff['changed'])
 
     if n_removed or n_added or n_changed:
-        print('{0} rows removed'.format(n_removed), file=stream)
-        print('{0} rows added'.format(n_added), file=stream)
-        print('{0} rows changed'.format(n_changed), file=stream)
+        print('%d rows removed (%.01f%%)' % (
+            n_removed, 100 * n_removed / orig_size
+        ), file=stream)
+        print('%d rows added (%.01f%%)' % (
+            n_added, 100 * n_added / orig_size
+        ), file=stream)
+        print('%d rows changed (%.01f%%)' % (
+            n_changed, 100 * n_changed / orig_size
+        ), file=stream)
     else:
         print('files are identical')
 
@@ -141,10 +153,10 @@ def main():
     if options.key:
         indexes = options.key.split(',')
 
-    diff = csvdiff(lhs, rhs, indexes)
+    diff, orig_size = csvdiff(lhs, rhs, indexes)
 
     if options.summary:
-        summarize_diff(diff)
+        summarize_diff(diff, orig_size)
 
     elif options.yaml:
         yaml_diff(diff)
