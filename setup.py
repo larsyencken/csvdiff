@@ -36,6 +36,7 @@ setup(
     },
     include_package_data=True,
     install_requires=[
+        'PyYAML>=3.10'
     ],
     license="BSD",
     zip_safe=False,
