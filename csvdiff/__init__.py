@@ -67,10 +67,10 @@ def diff_shared(lhs_recs, rhs_recs, keys):
 
 def diff_summary(removed, added, changed, lhs_recs, rhs_recs):
     diff = {}
-    diff['removed'] = {unicode(k): lhs_recs[k] for k in removed}
-    diff['added'] = {unicode(k): rhs_recs[k] for k in added}
-    diff['changed'] = {unicode(k): rec_diff(lhs_recs[k], rhs_recs[k])
-                       for k in changed}
+    diff[u'removed'] = {k: lhs_recs[k] for k in removed}
+    diff[u'added'] = {k: rhs_recs[k] for k in added}
+    diff[u'changed'] = {k: rec_diff(lhs_recs[k], rhs_recs[k])
+                        for k in changed}
     return diff
 
 
@@ -96,13 +96,13 @@ def summarize_diff(diff, orig_size, stream=sys.stdout):
     n_changed = len(diff['changed'])
 
     if n_removed or n_added or n_changed:
-        print('%d rows removed (%.01f%%)' % (
+        print(u'%d rows removed (%.01f%%)' % (
             n_removed, 100 * n_removed / orig_size
         ), file=stream)
-        print('%d rows added (%.01f%%)' % (
+        print(u'%d rows added (%.01f%%)' % (
             n_added, 100 * n_added / orig_size
         ), file=stream)
-        print('%d rows changed (%.01f%%)' % (
+        print(u'%d rows changed (%.01f%%)' % (
             n_changed, 100 * n_changed / orig_size
         ), file=stream)
     else:

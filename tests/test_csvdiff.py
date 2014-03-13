@@ -8,9 +8,11 @@ test_csvdiff
 Tests for `csvdiff` module.
 """
 
+from __future__ import absolute_import, print_function, division
+
 import unittest
 
-from cStringIO import StringIO
+from io import StringIO
 
 import csvdiff
 
@@ -33,7 +35,7 @@ class TestCsvdiff(unittest.TestCase):
         diff = csvdiff.diff_records(lhs, rhs)
         o = StringIO()
         csvdiff.summarize_diff(diff, len(lhs), stream=o)
-        self.assertEquals(
+        self.assertEqual(
             o.getvalue(),
             "1 rows removed (33.3%)\n"
             "1 rows added (33.3%)\n"
@@ -53,16 +55,16 @@ class TestCsvdiff(unittest.TestCase):
         }
 
         diff = csvdiff.diff_records(lhs, rhs)
-        self.assertEquals(diff['added'], {
+        self.assertEqual(diff['added'], {
             'd': {'name': 'd', 'sheep': 8}
         })
-        self.assertEquals(diff['removed'], {
+        self.assertEqual(diff['removed'], {
             'b': {'name': 'b', 'sheep': 12}
         })
-        self.assertEquals(diff['changed'], {
+        self.assertEqual(diff['changed'], {
             'c': {'sheep': {'from': 0, 'to': 2}}
         })
-        self.assertEquals(set(diff), set(['added', 'removed', 'changed']))
+        self.assertEqual(set(diff), set(['added', 'removed', 'changed']))
 
     def tearDown(self):
         pass
