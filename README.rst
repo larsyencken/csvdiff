@@ -11,11 +11,19 @@ csvdiff
 .. image:: https://pypip.in/d/csvdiff/badge.png
         :target: https://crate.io/packages/csvdiff?version=latest
 
-
 Overview
 --------
 
 Generate a diff between two CSV files on the command-line.
+
+Installing
+----------
+
+``pip install csvdiff``
+
+
+Examples
+--------
 
 For example, suppose we have ``a.csv``::
 
