@@ -29,6 +29,11 @@ setup(
         'csvdiff',
     ],
     package_dir={'csvdiff': 'csvdiff'},
+    entry_points={
+        'console_scripts': [
+            'csvdiff = csvdiff:main',
+        ],
+    },
     include_package_data=True,
     install_requires=[
     ],
