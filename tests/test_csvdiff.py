@@ -55,15 +55,41 @@ class TestCsvdiff(unittest.TestCase):
         }
 
         diff = csvdiff.diff_records(lhs, rhs)
-        self.assertEqual(diff['added'], {
-            'd': {'name': 'd', 'sheep': 8}
-        })
-        self.assertEqual(diff['removed'], {
-            'b': {'name': 'b', 'sheep': 12}
-        })
-        self.assertEqual(diff['changed'], {
-            'c': {'sheep': {'from': 0, 'to': 2}}
-        })
+        self.assertEqual(diff['added'], [
+            {'name': 'd', 'sheep': 8}
+        ])
+        self.assertEqual(diff['removed'], [
+            {'name': 'b', 'sheep': 12}
+        ])
+        self.assertEqual(diff['changed'], [
+            {'key': 'c',
+             'fields': {'sheep': {'from': 0, 'to': 2}}}
+        ])
+        self.assertEqual(set(diff), set(['added', 'removed', 'changed']))
+
+    def test_diff_records_multikey(self):
+        lhs = {
+            ('a', 1): {'name': 'a', 'type': 1, 'sheep': 7},
+            ('b', 1): {'name': 'b', 'type': 1, 'sheep': 12},
+            ('c', 1): {'name': 'c', 'type': 1, 'sheep': 0},
+        }
+        rhs = {
+            ('a', 1): {'name': 'a', 'type': 1, 'sheep': 7},
+            ('c', 1): {'name': 'c', 'type': 1, 'sheep': 2},
+            ('d', 1): {'name': 'd', 'type': 1, 'sheep': 8},
+        }
+
+        diff = csvdiff.diff_records(lhs, rhs)
+        self.assertEqual(diff['added'], [
+            {'name': 'd', 'sheep': 8, 'type': 1}
+        ])
+        self.assertEqual(diff['removed'], [
+            {'name': 'b', 'sheep': 12, 'type': 1}
+        ])
+        self.assertEqual(diff['changed'], [
+            {'key': ('c', 1),
+             'fields': {'sheep': {'from': 0, 'to': 2}}}
+        ])
         self.assertEqual(set(diff), set(['added', 'removed', 'changed']))
 
     def tearDown(self):

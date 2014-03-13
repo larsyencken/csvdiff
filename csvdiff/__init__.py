@@ -15,6 +15,7 @@ import sys
 import optparse
 import csv
 import json
+import functools
 
 import yaml
 
@@ -67,10 +68,11 @@ def diff_shared(lhs_recs, rhs_recs, keys):
 
 def diff_summary(removed, added, changed, lhs_recs, rhs_recs):
     diff = {}
-    diff[u'removed'] = {k: lhs_recs[k] for k in removed}
-    diff[u'added'] = {k: rhs_recs[k] for k in added}
-    diff[u'changed'] = {k: rec_diff(lhs_recs[k], rhs_recs[k])
-                        for k in changed}
+    diff[u'removed'] = [lhs_recs[k] for k in removed]
+    diff[u'added'] = [rhs_recs[k] for k in added]
+    diff[u'changed'] = [{'key': k,
+                         'fields': rec_diff(lhs_recs[k], rhs_recs[k])}
+                        for k in changed]
     return diff
 
 
@@ -110,7 +112,18 @@ def summarize_diff(diff, orig_size, stream=sys.stdout):
 
 
 def yaml_diff(diff, stream=sys.stdout):
-    yaml.safe_dump(diff, stream, default_flow_style=False)
+    dump = functools.partial(yaml.safe_dump, stream=stream,
+                             default_flow_style=False)
+
+    # dump in three separate calls to force the order of these fields in the
+    # YAML output
+    dump({'removed': diff['removed']})
+    dump({'added': diff['added']})
+    dump({'changed': diff['changed']})
+
+
+def json_diff(diff, stream=sys.stdout):
+    json.dump(diff, stream)
 
 
 def _create_option_parser():
@@ -162,4 +175,4 @@ def main():
         yaml_diff(diff)
 
     else:
-        json.dump(diff, sys.stdout)
+        json_diff(diff)
