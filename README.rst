@@ -37,7 +37,7 @@ and a matching file after some changes, ``b.csv``::
 
 Now we can ask for a summary of differences::
 
-    $ csvdiff -s -k id a.csv b.csv
+    $ csvdiff --summary -k id a.csv b.csv
     1 rows removed (20.0%)
     1 rows added (20.0%)
     2 rows changed (40.0%)
