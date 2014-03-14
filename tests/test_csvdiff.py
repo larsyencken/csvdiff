@@ -10,7 +10,10 @@ Tests for `csvdiff` module.
 
 from __future__ import absolute_import, print_function, division
 
+from os import path
 import unittest
+import json
+import tempfile
 
 from io import StringIO
 
@@ -19,7 +22,10 @@ import csvdiff
 
 class TestCsvdiff(unittest.TestCase):
     def setUp(self):
-        pass
+        csvdiff.DEBUG = True
+        self.examples = path.join(path.dirname(__file__), 'examples')
+        self.a_file = path.join(self.examples, 'a.csv')
+        self.b_file = path.join(self.examples, 'b.csv')
 
     def test_summarize(self):
         lhs = {
@@ -41,6 +47,45 @@ class TestCsvdiff(unittest.TestCase):
             "1 rows added (33.3%)\n"
             "1 rows changed (33.3%)\n"
         )
+
+    def test_needs_args(self):
+        self.assertRaises(csvdiff.FatalError,
+                          csvdiff.main,
+                          [])
+
+    def test_needs_keys(self):
+        self.assertRaises(csvdiff.FatalError,
+                          csvdiff.main,
+                          [self.a_file, self.b_file])
+
+    def test_needs_valid_key(self):
+        self.assertRaises(csvdiff.FatalError,
+                          csvdiff.main,
+                          ['--key=asasdfa', self.a_file, self.b_file])
+
+    def test_diff_command(self):
+        t = tempfile.NamedTemporaryFile(delete=True)
+        csvdiff.main(['--key=id', '-o', t.name, self.a_file, self.b_file])
+
+        diff = json.load(open(t.name))
+
+        expected = {
+            'added': [{'id': '5', 'name': 'mira', 'amount': '81'}],
+            'removed': [{'id': '2', 'name': 'eva', 'amount': '63'}],
+            'changed': [
+                {'key': ['1'],
+                 'fields': {'amount': {'from': '20', 'to': '23'}}},
+                {'key': ['6'],
+                 'fields': {'amount': {'from': '10', 'to': '13'}}},
+            ],
+        }
+
+        self.assertEquals(diff['added'],
+                          expected['added'])
+        self.assertEquals(diff['removed'],
+                          expected['removed'])
+        self.assertEquals(sorted(diff['changed'], key=lambda r: r['key']),
+                          sorted(expected['changed'], key=lambda r: r['key']))
 
     def test_diff_records(self):
         lhs = {

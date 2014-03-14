@@ -20,6 +20,13 @@ import functools
 import yaml
 
 
+DEBUG = False
+
+
+class FatalError(Exception):
+    pass
+
+
 def csvdiff(lhs, rhs, indexes):
     lhs_recs = load_records(lhs, indexes)
     rhs_recs = load_records(rhs, indexes)
@@ -43,10 +50,13 @@ def diff_records(lhs_recs, rhs_recs):
 
 
 def load_records(filename, indexes):
-    return {
-        tuple(r[i] for i in indexes): r
-        for r in csv.DictReader(open(filename))
-    }
+    try:
+        return {
+            tuple(r[i] for i in indexes): r
+            for r in csv.DictReader(open(filename))
+        }
+    except KeyError as k:
+        abort('invalid column name {k} as key'.format(k=k))
 
 
 def diff_keys(lhs_recs, rhs_recs):
@@ -142,6 +152,9 @@ Diff the two CSV files."""  # nopep8
     parser.add_option('--yaml', action='store_true',
                       dest='yaml',
                       help='Print changes in more readable YAML format.')
+    parser.add_option('-o', '--output', action='store', dest='output',
+                      default='/dev/stdout',
+                      help='Save the diff to the given filename')
 
     return parser
 
@@ -151,19 +164,25 @@ def _parse_keys(keys):
     return indexes
 
 
-def main():
-    argv = sys.argv[1:]
+def abort(message=None):
+    if DEBUG:
+        raise FatalError(message)
+
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+def main(argv=None):
+    argv = argv or sys.argv[1:]
     parser = _create_option_parser()
     (options, args) = parser.parse_args(argv)
 
     if not options.key:
-        print('you must specify one or more key columns with --key',
-              file=sys.stderr)
-        sys.exit(1)
+        abort('you must specify one or more key columns with --key')
 
     elif len(args) != 2 or not options.key:
         parser.print_help()
-        sys.exit(1)
+        abort()
 
     lhs, rhs = args
 
@@ -173,11 +192,12 @@ def main():
 
     diff, orig_size = csvdiff(lhs, rhs, indexes)
 
-    if options.summary:
-        summarize_diff(diff, orig_size)
+    with open(options.output, 'w') as ostream:
+        if options.summary:
+            summarize_diff(diff, orig_size, ostream)
 
-    elif options.yaml:
-        yaml_diff(diff)
+        elif options.yaml:
+            yaml_diff(diff, ostream)
 
-    else:
-        json_diff(diff)
+        else:
+            json_diff(diff, ostream)
