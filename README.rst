@@ -77,23 +77,9 @@ Or look at the full diff, using YAML rather than JSON (the default) to make it m
 
 It gives us the full listing of added and removed rows, as well as a listing of what fields changed for that shared a key.
 
+For more usage options, run ``csvdiff --help``.
+
 License
 -------
 
 BSD license
-
-Features
---------
-
-0.1.0
-~~~~~
-
-* Generates a JSON or YAML difference between two CSV files
-* Specify multiple key components with ``-k``
-* Can provide a difference summary
-* Assumes files use standard comma-separation, double-quoting and a header row with field names
-
-One day
--------
-
-* Exit non-zero status where a difference exists
