@@ -156,7 +156,12 @@ def main():
     parser = _create_option_parser()
     (options, args) = parser.parse_args(argv)
 
-    if len(args) != 2:
+    if not options.key:
+        print('you must specify one or more key columns with --key',
+              file=sys.stderr)
+        sys.exit(1)
+
+    elif len(args) != 2 or not options.key:
         parser.print_help()
         sys.exit(1)
 
