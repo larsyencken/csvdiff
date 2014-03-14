@@ -9,7 +9,7 @@ csvdiff
         :target: https://travis-ci.org/larsyencken/csvdiff
 
 .. image:: https://pypip.in/d/csvdiff/badge.png
-        :target: https://crate.io/packages/csvdiff?version=latest
+        :target: https://crate.io/packages/csvdiff
 
 Overview
 --------
