@@ -27,9 +27,9 @@ class FatalError(Exception):
     pass
 
 
-def csvdiff(lhs, rhs, indexes):
-    lhs_recs = load_records(lhs, indexes)
-    rhs_recs = load_records(rhs, indexes)
+def csvdiff(lhs, rhs, indexes, sep=','):
+    lhs_recs = load_records(lhs, indexes, sep=sep)
+    rhs_recs = load_records(rhs, indexes, sep=sep)
 
     orig_size = len(lhs_recs)
 
@@ -49,11 +49,11 @@ def diff_records(lhs_recs, rhs_recs):
     return diff
 
 
-def load_records(filename, indexes):
+def load_records(filename, indexes, sep=','):
     try:
         return {
             tuple(r[i] for i in indexes): r
-            for r in csv.DictReader(open(filename))
+            for r in csv.DictReader(open(filename), delimiter=sep)
         }
     except KeyError as k:
         abort('invalid column name {k} as key'.format(k=k))
@@ -155,6 +155,8 @@ Diff the two CSV files."""  # nopep8
     parser.add_option('-o', '--output', action='store', dest='output',
                       default='/dev/stdout',
                       help='Save the diff to the given filename')
+    parser.add_option('-t', '--tabs', action='store_true',
+                      help='Use tabs instead of commas as separators')
 
     return parser
 
@@ -190,7 +192,9 @@ def main(argv=None):
     if options.key:
         indexes = options.key.split(',')
 
-    diff, orig_size = csvdiff(lhs, rhs, indexes)
+    sep = '\t' if options.tabs else ','
+
+    diff, orig_size = csvdiff(lhs, rhs, indexes, sep=sep)
 
     with open(options.output, 'w') as ostream:
         if options.summary:
