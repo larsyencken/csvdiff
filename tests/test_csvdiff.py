@@ -10,14 +10,16 @@ Tests for `csvdiff` module.
 
 from __future__ import absolute_import, print_function, division
 
+import os
 from os import path
 import unittest
 import json
 import tempfile
-
 from io import StringIO
 
 import csvdiff
+
+from click.testing import CliRunner
 
 
 class TestCsvdiff(unittest.TestCase):
@@ -26,6 +28,17 @@ class TestCsvdiff(unittest.TestCase):
         self.examples = path.join(path.dirname(__file__), 'examples')
         self.a_file = path.join(self.examples, 'a.csv')
         self.b_file = path.join(self.examples, 'b.csv')
+        self.runner = CliRunner()
+
+    def main(self, *args):
+        t = tempfile.NamedTemporaryFile(delete=True)
+        result = self.runner.invoke(csvdiff.main, ('--output', t.name) + args)
+        diff = None
+        if path.exists(t.name) and os.stat(t.name).st_size:
+            with open(t.name) as istream:
+                diff = json.load(istream)
+
+        return result.exit_code, diff
 
     def test_summarize(self):
         lhs = {
@@ -49,25 +62,20 @@ class TestCsvdiff(unittest.TestCase):
         )
 
     def test_needs_args(self):
-        self.assertRaises(csvdiff.FatalError,
-                          csvdiff.main,
-                          [])
+        exit_code, _ = self.main()
+        assert exit_code != 0
 
-    def test_needs_keys(self):
-        self.assertRaises(csvdiff.FatalError,
-                          csvdiff.main,
-                          [self.a_file, self.b_file])
+    def test_needs_enough_arguments(self):
+        exit_code, _ = self.main(self.a_file, self.b_file)
+        assert exit_code != 0
 
     def test_needs_valid_key(self):
-        self.assertRaises(csvdiff.FatalError,
-                          csvdiff.main,
-                          ['--key=asasdfa', self.a_file, self.b_file])
+        exit_code, _ = self.main('abcd', self.a_file, self.b_file)
+        assert exit_code != 0
 
     def test_diff_command(self):
-        t = tempfile.NamedTemporaryFile(delete=True)
-        csvdiff.main(['--key=id', '-o', t.name, self.a_file, self.b_file])
-
-        diff = json.load(open(t.name))
+        exit_code, diff = self.main('id', self.a_file, self.b_file)
+        self.assertEqual(exit_code, 0)
 
         expected = {
             'added': [{'id': '5', 'name': 'mira', 'amount': '81'}],
@@ -80,12 +88,12 @@ class TestCsvdiff(unittest.TestCase):
             ],
         }
 
-        self.assertEquals(diff['added'],
-                          expected['added'])
-        self.assertEquals(diff['removed'],
-                          expected['removed'])
-        self.assertEquals(sorted(diff['changed'], key=lambda r: r['key']),
-                          sorted(expected['changed'], key=lambda r: r['key']))
+        self.assertEqual(diff['added'],
+                         expected['added'])
+        self.assertEqual(diff['removed'],
+                         expected['removed'])
+        self.assertEqual(sorted(diff['changed'], key=lambda r: r['key']),
+                         sorted(expected['changed'], key=lambda r: r['key']))
 
     def test_diff_records(self):
         lhs = {

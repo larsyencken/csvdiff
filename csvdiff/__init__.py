@@ -12,12 +12,10 @@ __email__ = 'lars@yencken.org'
 __version__ = '0.1.0'
 
 import sys
-import optparse
 import csv
 import json
-import functools
 
-import yaml
+import click
 
 
 DEBUG = False
@@ -27,9 +25,9 @@ class FatalError(Exception):
     pass
 
 
-def csvdiff(lhs, rhs, indexes):
-    lhs_recs = load_records(lhs, indexes)
-    rhs_recs = load_records(rhs, indexes)
+def csvdiff(lhs, rhs, index_columns):
+    lhs_recs = load_records(lhs, index_columns)
+    rhs_recs = load_records(rhs, index_columns)
 
     orig_size = len(lhs_recs)
 
@@ -49,10 +47,10 @@ def diff_records(lhs_recs, rhs_recs):
     return diff
 
 
-def load_records(filename, indexes):
+def load_records(filename, index_columns):
     try:
         return {
-            tuple(r[i] for i in indexes): r
+            tuple(r[i] for i in index_columns): r
             for r in csv.DictReader(open(filename))
         }
     except KeyError as k:
@@ -121,47 +119,11 @@ def summarize_diff(diff, orig_size, stream=sys.stdout):
         print('files are identical')
 
 
-def yaml_diff(diff, stream=sys.stdout):
-    dump = functools.partial(yaml.safe_dump, stream=stream,
-                             default_flow_style=False)
-
-    # dump in three separate calls to force the order of these fields in the
-    # YAML output
-    dump({'removed': diff['removed']})
-    dump({'added': diff['added']})
-    dump({'changed': diff['changed']})
-
-
-def json_diff(diff, stream=sys.stdout):
-    json.dump(diff, stream)
-
-
-def _create_option_parser():
-    usage = \
-"""%prog [options] lhs.csv rhs.csv
-
-Diff the two CSV files."""  # nopep8
-
-    parser = optparse.OptionParser(usage)
-    parser.add_option('-k', '--key', action='store',
-                      dest='key',
-                      help='A comma separated list of key columns.')
-    parser.add_option('-s', '--summary', action='store_true',
-                      dest='summary',
-                      help='Summarize the changes')
-    parser.add_option('--yaml', action='store_true',
-                      dest='yaml',
-                      help='Print changes in more readable YAML format.')
-    parser.add_option('-o', '--output', action='store', dest='output',
-                      default='/dev/stdout',
-                      help='Save the diff to the given filename')
-
-    return parser
-
-
-def _parse_keys(keys):
-    indexes = map(int, keys.split(','))
-    return indexes
+def json_diff(diff, stream=sys.stdout, compact=False):
+    if compact:
+        json.dump(diff, stream)
+    else:
+        json.dump(diff, stream, indent=2, sort_keys=True)
 
 
 def abort(message=None):
@@ -172,32 +134,54 @@ def abort(message=None):
     sys.exit(1)
 
 
-def main(argv=None):
-    argv = argv or sys.argv[1:]
-    parser = _create_option_parser()
-    (options, args) = parser.parse_args(argv)
+class CSVType(click.ParamType):
+    name = 'csv'
 
-    if not options.key:
-        abort('you must specify one or more key columns with --key')
+    def convert(self, value, param, ctx):
+        if isinstance(value, bytes):
+            try:
+                enc = getattr(sys.stdin, 'encoding', None)
+                if enc is not None:
+                    value = value.decode(enc)
+            except UnicodeError:
+                try:
+                    value = value.decode(sys.getfilesystemencoding())
+                except UnicodeError:
+                    value = value.decode('utf-8', 'replace')
+            return value
+        return value.split(',')
 
-    elif len(args) != 2 or not options.key:
-        parser.print_help()
-        abort()
+    def __repr__(self):
+        return 'CSV'
 
-    lhs, rhs = args
 
-    indexes = None
-    if options.key:
-        indexes = options.key.split(',')
+@click.command()
+@click.argument('index_columns', type=CSVType())
+@click.argument('from_csv', type=click.Path(exists=True))
+@click.argument('to_csv', type=click.Path(exists=True))
+@click.option('--style',
+              type=click.Choice(['compact', 'pretty', 'summary']),
+              default='compact',
+              help=('Instead of the default compact output, pretty-print '
+                    'or give a summary instead'))
+@click.option('--output', '-o', type=click.Path(),
+              help='Output to a file instead of stdout',
+              default=sys.stdout)
+def main(index_columns, from_csv, to_csv, style=None, output=None):
+    """
+    Compare two csv files to see what rows differ between them. The files
+    are each expected to have a header row, and for each row to be uniquely
+    identified by one or more indexing columns.
+    """
+    csvdiff_main(index_columns, from_csv, to_csv, style=style, output=output)
 
-    diff, orig_size = csvdiff(lhs, rhs, indexes)
 
-    with open(options.output, 'w') as ostream:
-        if options.summary:
+def csvdiff_main(index_columns, from_csv, to_csv, style=None, output=None):
+    diff, orig_size = csvdiff(from_csv, to_csv, index_columns)
+
+    with open(output, 'w') as ostream:
+        if style == 'summary':
             summarize_diff(diff, orig_size, ostream)
-
-        elif options.yaml:
-            yaml_diff(diff, ostream)
-
         else:
-            json_diff(diff, ostream)
+            compact = (style == 'compact')
+            json_diff(diff, ostream, compact=compact)
