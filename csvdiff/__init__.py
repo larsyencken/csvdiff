@@ -148,7 +148,8 @@ class CSVType(click.ParamType):
                     value = value.decode(sys.getfilesystemencoding())
                 except UnicodeError:
                     value = value.decode('utf-8', 'replace')
-            return value
+            return value.split(',')
+
         return value.split(',')
 
     def __repr__(self):
