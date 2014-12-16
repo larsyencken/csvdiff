@@ -166,8 +166,7 @@ class CSVType(click.ParamType):
               help=('Instead of the default compact output, pretty-print '
                     'or give a summary instead'))
 @click.option('--output', '-o', type=click.Path(),
-              help='Output to a file instead of stdout',
-              default=sys.stdout)
+              help='Output to a file instead of stdout')
 def main(index_columns, from_csv, to_csv, style=None, output=None):
     """
     Compare two csv files to see what rows differ between them. The files
@@ -180,9 +179,13 @@ def main(index_columns, from_csv, to_csv, style=None, output=None):
 def csvdiff_main(index_columns, from_csv, to_csv, style=None, output=None):
     diff, orig_size = csvdiff(from_csv, to_csv, index_columns)
 
-    with open(output, 'w') as ostream:
-        if style == 'summary':
-            summarize_diff(diff, orig_size, ostream)
-        else:
-            compact = (style == 'compact')
-            json_diff(diff, ostream, compact=compact)
+    if output is None:
+        ostream = sys.stdout
+    else:
+        ostream = open(output, 'w')
+
+    if style == 'summary':
+        summarize_diff(diff, orig_size, ostream)
+    else:
+        compact = (style == 'compact')
+        json_diff(diff, ostream, compact=compact)
