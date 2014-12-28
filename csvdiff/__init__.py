@@ -189,3 +189,5 @@ def csvdiff_main(index_columns, from_csv, to_csv, style=None, output=None):
     else:
         compact = (style == 'compact')
         json_diff(diff, ostream, compact=compact)
+
+    ostream.close()
