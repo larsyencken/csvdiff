@@ -21,7 +21,6 @@ Installing
 
 ``pip install csvdiff``
 
-
 Examples
 --------
 
@@ -45,35 +44,54 @@ and a matching file after some changes, ``b.csv``::
 
 Now we can ask for a summary of differences::
 
-    $ csvdiff --summary -k id a.csv b.csv
+    $ csvdiff --style=summary id a.csv b.csv
     1 rows removed (20.0%)
     1 rows added (20.0%)
     2 rows changed (40.0%)
 
-Or look at the full diff, using YAML rather than JSON (the default) to make it more readable::
+Or look at the full diff pretty printed, to make it more readable::
 
-    $ csvdiff --yaml -k id a.csv b.csv
-    removed:
-    - amount: '63'
-      id: '2'
-      name: eva
-    added:
-    - amount: '81'
-      id: '5'
-      name: mira
-    changed:
-    - fields:
-        amount:
-          from: '10'
-          to: '13'
-      key:
-      - '6'
-    - fields:
-        amount:
-          from: '20'
-          to: '23'
-      key:
-      - '1'
+    $ csvdiff --style=pretty id a.csv b.csv
+    {
+      "added": [
+        {
+          "amount": "81",
+          "id": "5",
+          "name": "mira"
+        }
+      ],
+      "changed": [
+        {
+          "fields": {
+            "amount": {
+              "from": "20",
+              "to": "23"
+            }
+          },
+          "key": [
+            "1"
+          ]
+        },
+        {
+          "fields": {
+            "amount": {
+              "from": "10",
+              "to": "13"
+            }
+          },
+          "key": [
+            "6"
+          ]
+        }
+      ],
+      "removed": [
+        {
+          "amount": "63",
+          "id": "2",
+          "name": "eva"
+        }
+      ]
+    }
 
 It gives us the full listing of added and removed rows, as well as a listing of what fields changed for that shared a key.
 
