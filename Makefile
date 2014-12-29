@@ -44,8 +44,11 @@ docs:
 	rm -f docs/modules.rst
 	sphinx-apidoc -o docs/ csvdiff
 	$(MAKE) -C docs clean
-	$(MAKE) -C docs html
+	$(MAKE) -C docs html man
 	open docs/_build/html/index.html
+
+man:
+	$(MAKE) -C docs man
 
 release: clean
 	python setup.py sdist upload
