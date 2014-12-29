@@ -32,11 +32,13 @@ setup(
     entry_points={
         'console_scripts': [
             'csvdiff = csvdiff:main',
+            'csvdiff-validate = csvdiff:validate_diff',
         ],
     },
     include_package_data=True,
     install_requires=[
         'click>=3.3',
+        'jsonschema>=2.4.0',
     ],
     license="BSD",
     zip_safe=False,

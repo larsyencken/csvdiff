@@ -17,6 +17,47 @@ import json
 
 import click
 
+DIFF_SCHEMA = {
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'title': 'csvdiff',
+    'description': 'The patch format used by csvdiff.',
+    'type': 'object',
+    'properties': {
+        'added': {
+            'type': 'array',
+            'items': {'type': 'object'},
+        },
+        'removed': {
+            'type': 'array',
+            'items': {'type': 'object'},
+        },
+        'changed': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'key': {'type': 'array',
+                            'items': {'type': 'string'},
+                            'minItems': 1},
+                    'fields': {
+                        'type': 'object',
+                    },
+                    'minProperties': 1,
+                    'patternProperties': {
+                        '.+': {'type': 'object',
+                               'properties': {
+                                   'from': {'type': 'string'},
+                                   'to': {'type': 'string'},
+                               },
+                               'required': ['from', 'to']}
+                    },
+                },
+            },
+        },
+    },
+    'required': ['added', 'changed', 'removed'],
+}
+
 
 DEBUG = False
 
@@ -191,3 +232,18 @@ def csvdiff_main(index_columns, from_csv, to_csv, style=None, output=None):
         json_diff(diff, ostream, compact=compact)
 
     ostream.close()
+
+
+@click.command()
+@click.argument('diff_file', type=click.Path(exists=True))
+def validate_diff(diff_file):
+    """
+    Check that a diff file is in valid csvdiff patch format.
+    """
+    try:
+        with open(diff_file, 'r') as istream:
+            diff = json.load(istream)  # noqa
+
+    except ValueError:
+        print('error: diff is not valid JSON', file=sys.stderr)
+        sys.exit(1)
