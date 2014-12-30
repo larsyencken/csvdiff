@@ -32,7 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'csvdiff = csvdiff:main',
-            'csvdiff-validate = csvdiff:validate_diff',
+            'csvpatch = csvdiff:patch',
         ],
     },
     include_package_data=True,

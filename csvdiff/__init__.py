@@ -67,8 +67,8 @@ class FatalError(Exception):
 
 
 def csvdiff(lhs, rhs, index_columns):
-    lhs_recs = load_records(lhs, index_columns)
-    rhs_recs = load_records(rhs, index_columns)
+    lhs_recs = load_indexed_records(lhs, index_columns)
+    rhs_recs = load_indexed_records(rhs, index_columns)
 
     orig_size = len(lhs_recs)
 
@@ -88,14 +88,20 @@ def diff_records(lhs_recs, rhs_recs):
     return diff
 
 
-def load_records(filename, index_columns):
+def load_indexed_records(filename, index_columns):
     try:
         return {
             tuple(r[i] for i in index_columns): r
-            for r in csv.DictReader(open(filename))
+            for r in load_records(filename)
         }
     except KeyError as k:
         abort('invalid column name {k} as key'.format(k=k))
+
+
+def load_records(filename):
+    istream = open(filename)
+    reader = csv.DictReader(istream)
+    return reader
 
 
 def diff_keys(lhs_recs, rhs_recs):
@@ -235,15 +241,48 @@ def csvdiff_main(index_columns, from_csv, to_csv, style=None, output=None):
 
 
 @click.command()
-@click.argument('diff_file', type=click.Path(exists=True))
-def validate_diff(diff_file):
+@click.argument('input_file', type=click.Path(exists=True))
+@click.option('--input', '-i', type=click.Path(exists=True),
+              help='Read the JSON patch from the given file.')
+@click.option('--output', '-o', type=click.Path(),
+              help='Write the transformed CSV to the given file.')
+def patch(input_file, input=None, output=None):
     """
-    Check that a diff file is in valid csvdiff patch format.
+    Apply the changes from a csvdiff patch to an existing CSV file.
     """
-    try:
-        with open(diff_file, 'r') as istream:
-            diff = json.load(istream)  # noqa
+    if input is None:
+        istream = sys.stdin
+    else:
+        istream = open(input)
 
-    except ValueError:
-        print('error: diff is not valid JSON', file=sys.stderr)
-        sys.exit(1)
+    if output is None:
+        ostream = sys.stdout
+    else:
+        ostream = open(output, 'w')
+
+    try:
+        diff = read_patch(istream)
+        orig = load_records(input_file)
+        patched = patch_records(orig, diff)
+        save_records(patched, orig.fieldnames, ostream)
+
+    finally:
+        input.close()
+        output.close()
+
+
+def read_patch(istream):
+    diff = json.load(istream)
+    # XXX validate it
+    return diff
+
+
+def patch_records(orig, diff):
+    raise Exception('not yet implemented')
+
+
+def save_records(records, fieldnames, ostream):
+    writer = csv.DictWriter(ostream, fieldnames)
+    writer.writeheader()
+    for r in records:
+        writer.writerow(r)
