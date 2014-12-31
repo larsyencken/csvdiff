@@ -14,6 +14,7 @@ import tempfile
 from io import StringIO  # noqa
 
 import csvdiff
+from csvdiff import patch
 
 from click.testing import CliRunner
 
@@ -35,6 +36,9 @@ class TestCsvpatch(unittest.TestCase):
                 diff = json.load(istream)
 
         return result.exit_code, diff
+
+    def test_schema_is_valid(self):
+        assert not patch.is_valid({})
 
     def test_apply_patch(self):
         pass

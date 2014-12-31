@@ -46,17 +46,18 @@ SCHEMA = {
                             'minItems': 1},
                     'fields': {
                         'type': 'object',
-                    },
-                    'minProperties': 1,
-                    'patternProperties': {
-                        '.+': {'type': 'object',
-                               'properties': {
-                                   'from': {'type': 'string'},
-                                   'to': {'type': 'string'},
-                               },
-                               'required': ['from', 'to']}
+                        'minProperties': 1,
+                        'patternProperties': {
+                            '^.*$': {'type': 'object',
+                                     'properties': {
+                                         'from': {'type': 'string'},
+                                         'to': {'type': 'string'},
+                                     },
+                                     'required': ['from', 'to']},
+                        },
                     },
                 },
+                'required': ['key', 'fields'],
             },
         },
     },
