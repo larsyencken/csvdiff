@@ -67,18 +67,6 @@ def is_valid(diff):
     pass
 
 
-def assemble(added, changed, removed, index_columns=None):
-    d = {
-        'added': added,
-        'changed': changed,
-        'removed': removed,
-    }
-    if index_columns is not None:
-        d['_index'] = index_columns
-
-    return d
-
-
 def apply(diff, recs, strict=True):
     """
     Transform the records with the patch. May fail if the records do not
@@ -159,3 +147,67 @@ def save(diff, stream=sys.stdout, compact=False):
         json.dump(diff, stream)
     else:
         json.dump(diff, stream, indent=2, sort_keys=True)
+
+
+def create(from_records, to_records, index_columns):
+    """
+    Diff two sets of records, using the index columns as the primary key for
+    both datasets.
+    """
+    from_indexed = records.index(from_records, index_columns)
+    to_indexed = records.index(to_records, index_columns)
+
+    return create_indexed(from_indexed, to_indexed, index_columns)
+
+
+def create_indexed(from_indexed, to_indexed, index_columns):
+    # examine keys for overlap
+    removed, added, shared = _compare_keys(from_indexed, to_indexed)
+
+    # check for changed rows
+    changed = _compare_rows(from_indexed, to_indexed, shared)
+
+    diff = _assemble(removed, added, changed, from_indexed, to_indexed,
+                     index_columns)
+
+    return diff
+
+
+def _compare_keys(from_recs, to_recs):
+    from_keys = set(from_recs)
+    to_keys = set(to_recs)
+    removed = from_keys.difference(to_keys)
+    shared = from_keys.intersection(to_keys)
+    added = to_keys.difference(from_keys)
+    return removed, added, shared
+
+
+def _compare_rows(from_recs, to_recs, keys):
+    "Return the set of keys which have changed."
+    return set(
+        k for k in keys
+        if sorted(from_recs[k].items()) != sorted(to_recs[k].items())
+    )
+
+
+def _assemble(removed, added, changed, from_recs, to_recs, index_columns):
+    diff = {}
+    diff[u'removed'] = [from_recs[k] for k in removed]
+    diff[u'added'] = [to_recs[k] for k in added]
+    diff[u'changed'] = [{'key': list(k),
+                         'fields': record_diff(from_recs[k], to_recs[k])}
+                        for k in changed]
+    diff['_index'] = index_columns
+    return diff
+
+
+def record_diff(lhs, rhs):
+    "Diff an individual row."
+    delta = {}
+    for k in set(lhs).union(rhs):
+        from_ = lhs[k]
+        to_ = rhs[k]
+        if from_ != to_:
+            delta[k] = {'from': from_, 'to': to_}
+
+    return delta
