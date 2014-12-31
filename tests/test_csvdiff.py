@@ -54,7 +54,7 @@ class TestCsvdiff(unittest.TestCase):
         ]
         diff = csvdiff.diff_records(lhs, rhs, ['name'])
         o = StringIO()
-        csvdiff.summarize_diff(diff, len(lhs), stream=o)
+        csvdiff._summarize_diff(diff, len(lhs), stream=o)
         self.assertEqual(
             o.getvalue(),
             "1 rows removed (33.3%)\n"
