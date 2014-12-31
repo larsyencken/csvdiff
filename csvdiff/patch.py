@@ -11,6 +11,8 @@ The the patch format.
 import sys
 import json
 
+import jsonschema
+
 from . import records
 from . import error
 
@@ -64,7 +66,12 @@ SCHEMA = {
 
 def is_valid(diff):
     "Validate it against the schema."
-    pass
+    try:
+        jsonschema.validate(diff, SCHEMA)
+    except jsonschema.ValidationError:
+        return False
+
+    return True
 
 
 def apply(diff, recs, strict=True):
@@ -138,15 +145,18 @@ def _update_records(indexed, deltas, strict=True):
 def load(istream, strict=True):
     "Deserialize a patch object."
     # XXX validate it if strict
-    return json.load(istream)
+    diff = json.load(istream)
+    if strict:
+        jsonschema.validate(diff, SCHEMA)
+    return diff
 
 
 def save(diff, stream=sys.stdout, compact=False):
     "Serialize a patch object."
-    if compact:
-        json.dump(diff, stream)
-    else:
-        json.dump(diff, stream, indent=2, sort_keys=True)
+    flags = ({}
+             if compact
+             else {'indent': 2, 'sort_keys': True})
+    json.dump(diff, stream, **flags)
 
 
 def create(from_records, to_records, index_columns):
