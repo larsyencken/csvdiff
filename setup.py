@@ -31,8 +31,8 @@ setup(
     package_dir={'csvdiff': 'csvdiff'},
     entry_points={
         'console_scripts': [
-            'csvdiff = csvdiff:main',
-            'csvpatch = csvdiff:patch',
+            'csvdiff = csvdiff:csvdiff_cmd',
+            'csvpatch = csvdiff:patch_cmd',
         ],
     },
     include_package_data=True,
