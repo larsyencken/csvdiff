@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-test_csvdiff
-----------------------------------
-
-Tests for `csvdiff` module.
-"""
-
 from __future__ import absolute_import, print_function, division
 
 import os
@@ -18,6 +11,7 @@ import tempfile
 from io import StringIO
 
 import csvdiff
+from csvdiff import patch
 
 from click.testing import CliRunner
 
@@ -43,16 +37,18 @@ class TestCsvdiff(unittest.TestCase):
 
     def test_summarize(self):
         lhs = [
-            {'name': 'a', 'sheep': 7},
-            {'name': 'b', 'sheep': 12},
-            {'name': 'c', 'sheep': 0},
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'b', 'sheep': '12'},
+            {'name': 'c', 'sheep': '0'},
         ]
         rhs = [
-            {'name': 'a', 'sheep': 7},
-            {'name': 'c', 'sheep': 2},
-            {'name': 'd', 'sheep': 8},
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'c', 'sheep': '2'},
+            {'name': 'd', 'sheep': '8'},
         ]
         diff = csvdiff.diff_records(lhs, rhs, ['name'])
+        assert patch.is_valid(diff)
+        assert not patch.is_typed(diff)
         o = StringIO()
         csvdiff._summarize_diff(diff, len(lhs), stream=o)
         self.assertEqual(
@@ -74,8 +70,9 @@ class TestCsvdiff(unittest.TestCase):
         exit_code, _ = self.main('abcd', self.a_file, self.b_file)
         assert exit_code != 0
 
-    def test_diff_command(self):
+    def test_diff_command_valid_usage(self):
         exit_code, diff = self.main('id', self.a_file, self.b_file)
+        assert patch.is_valid(diff)
         self.assertEqual(exit_code, 0)
 
         expected = {
@@ -96,7 +93,39 @@ class TestCsvdiff(unittest.TestCase):
         self.assertEqual(sorted(diff['changed'], key=lambda r: r['key']),
                          sorted(expected['changed'], key=lambda r: r['key']))
 
-    def test_diff_records(self):
+    def test_diff_records_str_values(self):
+        lhs = [
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'b', 'sheep': '12'},
+            {'name': 'c', 'sheep': '0'},
+        ]
+        rhs = [
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'c', 'sheep': '2'},
+            {'name': 'd', 'sheep': '8'},
+        ]
+
+        diff = csvdiff.diff_records(lhs, rhs, ['name'])
+        assert patch.is_valid(diff)
+        assert not patch.is_typed(diff)
+
+        # check the contents of the diff
+        self.assertEqual(diff['added'], [
+            {'name': 'd', 'sheep': '8'}
+        ])
+        self.assertEqual(diff['removed'], [
+            {'name': 'b', 'sheep': '12'}
+        ])
+        self.assertEqual(diff['changed'], [
+            {'key': ['c'],
+             'fields': {'sheep': {'from': '0', 'to': '2'}}}
+        ])
+
+        # check that we can apply the diff
+        patched = csvdiff.patch_records(diff, lhs)
+        self.assertEqual(sorted(rhs), sorted(patched))
+
+    def test_diff_records_nonstr_values(self):
         lhs = [
             {'name': 'a', 'sheep': 7},
             {'name': 'b', 'sheep': 12},
@@ -109,6 +138,9 @@ class TestCsvdiff(unittest.TestCase):
         ]
 
         diff = csvdiff.diff_records(lhs, rhs, ['name'])
+        assert patch.is_valid(diff)
+        assert patch.is_typed(diff)
+
         self.assertEqual(diff['added'], [
             {'name': 'd', 'sheep': 8}
         ])
@@ -119,8 +151,10 @@ class TestCsvdiff(unittest.TestCase):
             {'key': ['c'],
              'fields': {'sheep': {'from': 0, 'to': 2}}}
         ])
-        self.assertEqual(set(diff), set(['added', 'removed', 'changed',
-                                         '_index']))
+
+        # check that we can apply the diff
+        patched = csvdiff.patch_records(diff, lhs)
+        self.assertEqual(sorted(rhs), sorted(patched))
 
     def test_diff_records_multikey(self):
         lhs = [
@@ -135,6 +169,9 @@ class TestCsvdiff(unittest.TestCase):
         ]
 
         diff = csvdiff.diff_records(lhs, rhs, ['name', 'type'])
+        assert patch.is_valid(diff)
+        assert patch.is_typed(diff)
+
         self.assertEqual(diff['added'], [
             {'name': 'd', 'sheep': 8, 'type': 1}
         ])
@@ -145,8 +182,9 @@ class TestCsvdiff(unittest.TestCase):
             {'key': ['c', 1],
              'fields': {'sheep': {'from': 0, 'to': 2}}}
         ])
-        self.assertEqual(set(diff), set(['added', 'removed', 'changed',
-                                         '_index']))
+
+    def test_patch_schema_is_valid(self):
+        assert not patch.is_valid({})
 
     def tearDown(self):
         pass

@@ -10,6 +10,8 @@ The the patch format.
 
 import sys
 import json
+import copy
+import itertools
 
 import jsonschema
 
@@ -30,11 +32,17 @@ SCHEMA = {
         },
         'added': {
             'type': 'array',
-            'items': {'type': 'object'},
+            'items': {'type': 'object',
+                      'patternProperties': {
+                          '^.*$': {'type': ['string', 'number']},
+                      }},
         },
         'removed': {
             'type': 'array',
-            'items': {'type': 'object'},
+            'items': {'type': 'object',
+                      'patternProperties': {
+                          '^.*$': {'type': ['string', 'number']},
+                      }},
         },
         'changed': {
             'type': 'array',
@@ -42,7 +50,7 @@ SCHEMA = {
                 'type': 'object',
                 'properties': {
                     'key': {'type': 'array',
-                            'items': {'type': 'string'},
+                            'items': {'type': ['string', 'number']},
                             'minItems': 1},
                     'fields': {
                         'type': 'object',
@@ -50,8 +58,12 @@ SCHEMA = {
                         'patternProperties': {
                             '^.*$': {'type': 'object',
                                      'properties': {
-                                         'from': {'type': 'string'},
-                                         'to': {'type': 'string'},
+                                         'from': {
+                                             'type': ['string', 'number']
+                                         },
+                                         'to': {
+                                             'type': ['string', 'number']
+                                         },
                                      },
                                      'required': ['from', 'to']},
                         },
@@ -68,11 +80,15 @@ SCHEMA = {
 def is_valid(diff):
     "Validate it against the schema."
     try:
-        jsonschema.validate(diff, SCHEMA)
+        validate(diff)
     except jsonschema.ValidationError:
         return False
 
     return True
+
+
+def validate(diff):
+    return jsonschema.validate(diff, SCHEMA)
 
 
 def apply(diff, recs, strict=True):
@@ -81,10 +97,11 @@ def apply(diff, recs, strict=True):
     match those expected in the patch.
     """
     index_columns = diff['_index']
-    indexed = records.index(recs, index_columns, strict=strict)
+    indexed = records.index(copy.deepcopy(recs), index_columns)
     _add_records(indexed, diff['added'], index_columns, strict=strict)
     _remove_records(indexed, diff['removed'], index_columns, strict=strict)
     _update_records(indexed, diff['changed'], strict=strict)
+    return indexed.values()
 
 
 def _add_records(indexed, recs_to_add, index_columns, strict=True):
@@ -145,10 +162,10 @@ def _update_records(indexed, deltas, strict=True):
 
 def load(istream, strict=True):
     "Deserialize a patch object."
-    # XXX validate it if strict
     diff = json.load(istream)
     if strict:
         jsonschema.validate(diff, SCHEMA)
+
     return diff
 
 
@@ -203,11 +220,11 @@ def _compare_rows(from_recs, to_recs, keys):
 
 def _assemble(removed, added, changed, from_recs, to_recs, index_columns):
     diff = {}
-    diff[u'removed'] = [from_recs[k] for k in removed]
-    diff[u'added'] = [to_recs[k] for k in added]
-    diff[u'changed'] = [{'key': list(k),
-                         'fields': record_diff(from_recs[k], to_recs[k])}
-                        for k in changed]
+    diff['removed'] = [from_recs[k] for k in removed]
+    diff['added'] = [to_recs[k] for k in added]
+    diff['changed'] = [{'key': list(k),
+                        'fields': record_diff(from_recs[k], to_recs[k])}
+                       for k in changed]
     diff['_index'] = index_columns
     return diff
 
@@ -222,3 +239,31 @@ def record_diff(lhs, rhs):
             delta[k] = {'from': from_, 'to': to_}
 
     return delta
+
+
+def is_typed(diff):
+    "Are any of the values in the diff typed?"
+    return any(type(v) != str for v in _iter_fields(diff))
+
+
+def _iter_fields(diff):
+    return itertools.chain(
+        _iter_record_fields(diff['added']),
+        _iter_record_fields(diff['removed']),
+        _iter_change_fields(diff['changed']),
+    )
+
+
+def _iter_change_fields(cs):
+    for c in cs:
+        for k in c['key']:
+            yield k
+        for v in c['fields'].values():
+            yield v['from']
+            yield v['to']
+
+
+def _iter_record_fields(recs):
+    for r in recs:
+        for v in r.values():
+            yield v
