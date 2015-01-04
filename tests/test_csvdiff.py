@@ -187,6 +187,10 @@ class TestCsvdiff(unittest.TestCase):
              'fields': {'sheep': {'from': 0, 'to': 2}}}
         ])
 
+        # check that we can apply the diff
+        patched = csvdiff.patch_records(diff, lhs)
+        self.assertRecordsEqual(rhs, patched)
+
     def assertRecordsEqual(self, lhs, rhs):
         lhs_sorted = sorted(lhs, key=lambda r: tuple(r.items()))
         rhs_sorted = sorted(rhs, key=lambda r: tuple(r.items()))
@@ -194,6 +198,51 @@ class TestCsvdiff(unittest.TestCase):
 
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
+
+    def test_patch_add(self):
+        orig = [
+            {'name': 'a', 'type': '1', 'sheep': '7'},
+        ]
+        diff = {
+            '_index': ['name'],
+            'added': [{'name': 'b', 'type': '1', 'sheep': '9'}],
+            'changed': [],
+            'removed': [],
+        }
+        expected = [
+            {'name': 'a', 'type': '1', 'sheep': '7'},
+            {'name': 'b', 'type': '1', 'sheep': '9'},
+        ]
+        self.assertRecordsEqual(patch.apply(diff, orig), expected)
+
+    def test_patch_remove(self):
+        orig = [
+            {'name': 'a', 'type': '1', 'sheep': '7'},
+        ]
+        diff = {
+            '_index': ['name'],
+            'added': [],
+            'changed': [],
+            'removed': [{'name': 'a', 'type': '1', 'sheep': '7'}],
+        }
+        expected = []
+        self.assertRecordsEqual(patch.apply(diff, orig), expected)
+
+    def test_patch_change(self):
+        orig = [
+            {'name': 'a', 'type': '1', 'sheep': '7'},
+        ]
+        diff = {
+            '_index': ['name'],
+            'added': [],
+            'changed': [{'key': ['a'], 'fields': {'sheep': {'from': '7',
+                                                            'to': '8'}}}],
+            'removed': [],
+        }
+        expected = [
+            {'name': 'a', 'type': '1', 'sheep': '8'},
+        ]
+        self.assertRecordsEqual(patch.apply(diff, orig), expected)
 
     def tearDown(self):
         pass
