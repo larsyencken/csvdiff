@@ -9,6 +9,7 @@ import unittest
 import json
 import tempfile
 from io import StringIO
+from collections import namedtuple
 
 import csvdiff
 from csvdiff import patch
@@ -25,6 +26,7 @@ class TestCsvdiff(unittest.TestCase):
         self.runner = CliRunner()
 
     def main(self, *args):
+        RunResult = namedtuple('RunResult', 'exit_code diff')
         t = tempfile.NamedTemporaryFile(delete=True)
         result = self.runner.invoke(csvdiff.csvdiff_cmd,
                                     ('--output', t.name) + args)
@@ -33,7 +35,7 @@ class TestCsvdiff(unittest.TestCase):
             with open(t.name) as istream:
                 diff = json.load(istream)
 
-        return result.exit_code, diff
+        return RunResult(result.exit_code, diff)
 
     def test_summarize(self):
         lhs = [
@@ -59,21 +61,23 @@ class TestCsvdiff(unittest.TestCase):
         )
 
     def test_needs_args(self):
-        exit_code, _ = self.main()
-        assert exit_code != 0
+        result = self.main()
+        assert result.exit_code != 0
 
     def test_needs_enough_arguments(self):
-        exit_code, _ = self.main(self.a_file, self.b_file)
-        assert exit_code != 0
+        result = self.main(self.a_file, self.b_file)
+        assert result.exit_code != 0
 
     def test_needs_valid_key(self):
-        exit_code, _ = self.main('abcd', self.a_file, self.b_file)
-        assert exit_code != 0
+        result = self.main('abcd', self.a_file, self.b_file)
+        assert result.exit_code != 0
 
     def test_diff_command_valid_usage(self):
-        exit_code, diff = self.main('id', self.a_file, self.b_file)
+        result = self.main('id', self.a_file, self.b_file)
+        self.assertEqual(result.exit_code, 0)
+        diff = result.diff
+        patch.validate(diff)
         assert patch.is_valid(diff)
-        self.assertEqual(exit_code, 0)
 
         expected = {
             'added': [{'id': '5', 'name': 'mira', 'amount': '81'}],
@@ -123,7 +127,7 @@ class TestCsvdiff(unittest.TestCase):
 
         # check that we can apply the diff
         patched = csvdiff.patch_records(diff, lhs)
-        self.assertEqual(sorted(rhs), sorted(patched))
+        self.assertRecordsEqual(rhs, patched)
 
     def test_diff_records_nonstr_values(self):
         lhs = [
@@ -154,7 +158,7 @@ class TestCsvdiff(unittest.TestCase):
 
         # check that we can apply the diff
         patched = csvdiff.patch_records(diff, lhs)
-        self.assertEqual(sorted(rhs), sorted(patched))
+        self.assertRecordsEqual(rhs, patched)
 
     def test_diff_records_multikey(self):
         lhs = [
@@ -182,6 +186,11 @@ class TestCsvdiff(unittest.TestCase):
             {'key': ['c', 1],
              'fields': {'sheep': {'from': 0, 'to': 2}}}
         ])
+
+    def assertRecordsEqual(self, lhs, rhs):
+        lhs_sorted = sorted(lhs, key=lambda r: tuple(r.items()))
+        rhs_sorted = sorted(rhs, key=lambda r: tuple(r.items()))
+        self.assertEqual(lhs_sorted, rhs_sorted)
 
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
