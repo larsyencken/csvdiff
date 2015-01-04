@@ -24,9 +24,11 @@ def diff_files(from_file, to_file, index_columns):
     Diff two CSV files, returning the patch which transforms one into the
     other.
     """
-    from_records = records.load(from_file)
-    to_records = records.load(to_file)
-    return patch.create(from_records, to_records, index_columns)
+    with open(from_file) as from_stream:
+        with open(to_file) as to_stream:
+            from_records = records.load(from_stream)
+            to_records = records.load(to_stream)
+            return patch.create(from_records, to_records, index_columns)
 
 
 def diff_records(from_records, to_records, index_columns):
@@ -42,9 +44,11 @@ def patch_file(patch_stream, from_file, to_file, strict=True):
     Apply the patch to the source CSV file, and save the result to the target
     file.
     """
-    diff = patch.load(patch_file)
-    from_records = records.load(from_file)
-    to_records = patch.apply(diff, from_records, strict=strict)
+    diff = patch.load(patch_stream)
+
+    with open(from_file) as istream:
+        from_records = records.load(istream)
+        to_records = patch.apply(diff, from_records, strict=strict)
 
     # what order should the columns be in?
     if to_records:
@@ -189,5 +193,5 @@ def patch_cmd(input_file, input=None, output=None, strict=True):
         patch_file(patch_stream, input_file, tocsv_stream, strict=strict)
 
     finally:
-        input.close()
-        output.close()
+        patch_stream.close()
+        tocsv_stream.close()
