@@ -97,11 +97,11 @@ def apply(diff, recs, strict=True):
     match those expected in the patch.
     """
     index_columns = diff['_index']
-    indexed = records.index(copy.deepcopy(recs), index_columns)
+    indexed = records.index(copy.deepcopy(list(recs)), index_columns)
     _add_records(indexed, diff['added'], index_columns, strict=strict)
     _remove_records(indexed, diff['removed'], index_columns, strict=strict)
     _update_records(indexed, diff['changed'], strict=strict)
-    return indexed.values()
+    return records.sort(indexed.values())
 
 
 def _add_records(indexed, recs_to_add, index_columns, strict=True):
@@ -171,9 +171,10 @@ def load(istream, strict=True):
 
 def save(diff, stream=sys.stdout, compact=False):
     "Serialize a patch object."
-    flags = ({}
-             if compact
-             else {'indent': 2, 'sort_keys': True})
+    flags = {'sort_keys': True}
+    if not compact:
+        flags['indent'] = 2
+
     json.dump(diff, stream, **flags)
 
 
@@ -220,13 +221,18 @@ def _compare_rows(from_recs, to_recs, keys):
 
 def _assemble(removed, added, changed, from_recs, to_recs, index_columns):
     diff = {}
-    diff['removed'] = [from_recs[k] for k in removed]
-    diff['added'] = [to_recs[k] for k in added]
-    diff['changed'] = [{'key': list(k),
-                        'fields': record_diff(from_recs[k], to_recs[k])}
-                       for k in changed]
     diff['_index'] = index_columns
+    diff['added'] = records.sort(to_recs[k] for k in added)
+    diff['removed'] = records.sort(from_recs[k] for k in removed)
+    diff['changed'] = sorted(({'key': list(k),
+                               'fields': record_diff(from_recs[k], to_recs[k])}
+                              for k in changed),
+                             key=_change_key)
     return diff
+
+
+def _change_key(c):
+    return tuple(c['key'])
 
 
 def record_diff(lhs, rhs):

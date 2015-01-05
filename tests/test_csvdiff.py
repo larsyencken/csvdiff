@@ -10,6 +10,7 @@ import json
 import tempfile
 from io import StringIO
 from collections import namedtuple
+import csv
 
 import csvdiff
 from csvdiff import patch
@@ -23,9 +24,10 @@ class TestCsvdiff(unittest.TestCase):
         self.examples = path.join(path.dirname(__file__), 'examples')
         self.a_file = path.join(self.examples, 'a.csv')
         self.b_file = path.join(self.examples, 'b.csv')
+        self.diff_file = path.join(self.examples, 'diff.json')
         self.runner = CliRunner()
 
-    def main(self, *args):
+    def csvdiff_cmd(self, *args):
         RunResult = namedtuple('RunResult', 'exit_code diff')
         t = tempfile.NamedTemporaryFile(delete=True)
         result = self.runner.invoke(csvdiff.csvdiff_cmd,
@@ -36,6 +38,18 @@ class TestCsvdiff(unittest.TestCase):
                 diff = json.load(istream)
 
         return RunResult(result.exit_code, diff)
+
+    def patch_cmd(self, *args):
+        RunResult = namedtuple('RunResult', 'exit_code records')
+        t = tempfile.NamedTemporaryFile(delete=True)
+        result = self.runner.invoke(csvdiff.csvpatch_cmd,
+                                    ('--output', t.name) + args)
+        recs = None
+        if path.exists(t.name) and os.stat(t.name).st_size:
+            with open(t.name) as istream:
+                recs = list(csv.DictReader(istream))
+
+        return RunResult(result.exit_code, recs)
 
     def test_summarize(self):
         lhs = [
@@ -61,19 +75,19 @@ class TestCsvdiff(unittest.TestCase):
         )
 
     def test_needs_args(self):
-        result = self.main()
+        result = self.csvdiff_cmd()
         assert result.exit_code != 0
 
     def test_needs_enough_arguments(self):
-        result = self.main(self.a_file, self.b_file)
+        result = self.csvdiff_cmd(self.a_file, self.b_file)
         assert result.exit_code != 0
 
     def test_needs_valid_key(self):
-        result = self.main('abcd', self.a_file, self.b_file)
+        result = self.csvdiff_cmd('abcd', self.a_file, self.b_file)
         assert result.exit_code != 0
 
     def test_diff_command_valid_usage(self):
-        result = self.main('id', self.a_file, self.b_file)
+        result = self.csvdiff_cmd('id', self.a_file, self.b_file)
         self.assertEqual(result.exit_code, 0)
         diff = result.diff
         patch.validate(diff)
@@ -198,6 +212,15 @@ class TestCsvdiff(unittest.TestCase):
 
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
+
+    def test_patch_cmd_valid_args(self):
+        result = self.patch_cmd('-i', self.diff_file, self.a_file)
+        self.assertEqual(result.exit_code, 0)
+
+        with open(self.b_file) as istream:
+            expected = list(csv.DictReader(istream))
+
+        self.assertRecordsEqual(result.records, expected)
 
     def test_patch_add(self):
         orig = [

@@ -32,7 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'csvdiff = csvdiff:csvdiff_cmd',
-            'csvpatch = csvdiff:patch_cmd',
+            'csvpatch = csvdiff:csvpatch_cmd',
         ],
     },
     include_package_data=True,

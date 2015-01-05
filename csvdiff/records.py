@@ -31,4 +31,12 @@ def save(record_seq, fieldnames, ostream):
     writer = csv.DictWriter(ostream, fieldnames)
     writer.writeheader()
     for r in record_seq:
-        writer.writerow()
+        writer.writerow(r)
+
+
+def sort(recs):
+    return sorted(recs, key=_record_key)
+
+
+def _record_key(r):
+    return tuple(r.items())

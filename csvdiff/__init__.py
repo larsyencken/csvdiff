@@ -39,16 +39,15 @@ def diff_records(from_records, to_records, index_columns):
     return patch.create(from_records, to_records, index_columns)
 
 
-def patch_file(patch_stream, from_file, to_file, strict=True):
+def patch_file(patch_stream, fromcsv_stream, tocsv_stream, strict=True):
     """
     Apply the patch to the source CSV file, and save the result to the target
     file.
     """
     diff = patch.load(patch_stream)
 
-    with open(from_file) as istream:
-        from_records = records.load(istream)
-        to_records = patch.apply(diff, from_records, strict=strict)
+    from_records = records.load(fromcsv_stream)
+    to_records = patch.apply(diff, from_records, strict=strict)
 
     # what order should the columns be in?
     if to_records:
@@ -60,7 +59,7 @@ def patch_file(patch_stream, from_file, to_file, strict=True):
         # no data, use the original order
         fieldnames = from_records.fieldnames
 
-    records.save(to_records, fieldnames, to_file)
+    records.save(to_records, fieldnames, tocsv_stream)
 
 
 def patch_records(diff, from_records, strict=True):
@@ -170,7 +169,7 @@ def _summarize_diff(diff, orig_size, stream=sys.stdout):
 
 
 @click.command()
-@click.argument('input_file', type=click.Path(exists=True))
+@click.argument('input_csv', type=click.Path(exists=True))
 @click.option('--input', '-i', type=click.Path(exists=True),
               help='Read the JSON patch from the given file.')
 @click.option('--output', '-o', type=click.Path(),
@@ -178,7 +177,7 @@ def _summarize_diff(diff, orig_size, stream=sys.stdout):
 @click.option('--strict/--no-strict', default=True,
               help='Whether or not to tolerate a changed source document '
                    '(default: strict)')
-def patch_cmd(input_file, input=None, output=None, strict=True):
+def csvpatch_cmd(input_csv, input=None, output=None, strict=True):
     """
     Apply the changes from a csvdiff patch to an existing CSV file.
     """
@@ -188,10 +187,12 @@ def patch_cmd(input_file, input=None, output=None, strict=True):
     tocsv_stream = (sys.stdout
                     if output is None
                     else open(output, 'w'))
+    fromcsv_stream = open(input_csv)
 
     try:
-        patch_file(patch_stream, input_file, tocsv_stream, strict=strict)
+        patch_file(patch_stream, fromcsv_stream, tocsv_stream, strict=strict)
 
     finally:
         patch_stream.close()
+        fromcsv_stream.close()
         tocsv_stream.close()

@@ -1,0 +1,1 @@
+{"removed": [{"amount": "63", "name": "eva", "id": "2"}], "added": [{"amount": "81", "name": "mira", "id": "5"}], "_index": ["id"], "changed": [{"fields": {"amount": {"to": "23", "from": "20"}}, "key": ["1"]}, {"fields": {"amount": {"to": "13", "from": "10"}}, "key": ["6"]}]}
