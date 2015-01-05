@@ -94,6 +94,7 @@ class TestCsvdiff(unittest.TestCase):
         assert patch.is_valid(diff)
 
         expected = {
+            '_index': ['id'],
             'added': [{'id': '5', 'name': 'mira', 'amount': '81'}],
             'removed': [{'id': '2', 'name': 'eva', 'amount': '63'}],
             'changed': [
@@ -104,12 +105,7 @@ class TestCsvdiff(unittest.TestCase):
             ],
         }
 
-        self.assertEqual(diff['added'],
-                         expected['added'])
-        self.assertEqual(diff['removed'],
-                         expected['removed'])
-        self.assertEqual(sorted(diff['changed'], key=lambda r: r['key']),
-                         sorted(expected['changed'], key=lambda r: r['key']))
+        self.assertPatchesEqual(diff, expected)
 
     def test_diff_records_str_values(self):
         lhs = [
@@ -205,9 +201,6 @@ class TestCsvdiff(unittest.TestCase):
         patched = csvdiff.patch_records(diff, lhs)
         self.assertRecordsEqual(rhs, patched)
 
-    def assertRecordsEqual(self, lhs, rhs):
-        self.assertEqual(records.sort(lhs), records.sort(rhs))
-
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
 
@@ -264,6 +257,19 @@ class TestCsvdiff(unittest.TestCase):
             {'name': 'a', 'type': '1', 'sheep': '8'},
         ]
         self.assertRecordsEqual(patch.apply(diff, orig), expected)
+
+    def assertPatchesEqual(self, lhs, rhs):
+        self.assertEqual(lhs['_index'], rhs['_index'])
+        self.assertRecordsEqual(lhs['added'], rhs['added'])
+        self.assertRecordsEqual(lhs['removed'], rhs['removed'])
+        self.assertChangesEqual(lhs['changed'], rhs['changed'])
+
+    def assertRecordsEqual(self, lhs, rhs):
+        self.assertEqual(records.sort(lhs), records.sort(rhs))
+
+    def assertChangesEqual(self, lhs, rhs):
+        self.assertEqual(sorted(lhs, key=lambda r: r['key']),
+                         sorted(rhs, key=lambda r: r['key']))
 
     def tearDown(self):
         pass
