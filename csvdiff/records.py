@@ -39,4 +39,4 @@ def sort(recs):
 
 
 def _record_key(r):
-    return tuple(r.items())
+    return sorted(r.items())

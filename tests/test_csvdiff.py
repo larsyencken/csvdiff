@@ -13,7 +13,7 @@ from collections import namedtuple
 import csv
 
 import csvdiff
-from csvdiff import patch
+from csvdiff import patch, records
 
 from click.testing import CliRunner
 
@@ -206,9 +206,7 @@ class TestCsvdiff(unittest.TestCase):
         self.assertRecordsEqual(rhs, patched)
 
     def assertRecordsEqual(self, lhs, rhs):
-        lhs_sorted = sorted(lhs, key=lambda r: tuple(r.items()))
-        rhs_sorted = sorted(rhs, key=lambda r: tuple(r.items()))
-        self.assertEqual(lhs_sorted, rhs_sorted)
+        self.assertEqual(records.sort(lhs), records.sort(rhs))
 
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
