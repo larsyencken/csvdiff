@@ -8,7 +8,7 @@ from __future__ import absolute_import, print_function, division
 
 import sys
 
-DEBUG = True
+DEBUG = False
 
 
 class FatalError(Exception):
