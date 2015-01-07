@@ -13,6 +13,11 @@ __version__ = '0.2.0'
 
 import sys
 
+if sys.version_info.major == 2:
+    import StringIO as io
+else:
+    import io
+
 import click
 
 from . import records, patch, error
@@ -113,15 +118,18 @@ class CSVType(click.ParamType):
                     'or give a summary instead'))
 @click.option('--output', '-o', type=click.Path(),
               help='Output to a file instead of stdout')
-def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None):
+@click.option('--quiet', '-q', is_flag=True,
+              help="Don't output anything, just use exit codes")
+def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None,
+                quiet=False):
     """
     Compare two csv files to see what rows differ between them. The files
     are each expected to have a header row, and for each row to be uniquely
     identified by one or more indexing columns.
     """
-    ostream = (sys.stdout
-               if output is None
-               else open(output, 'w'))
+    ostream = (open(output, 'w') if output
+               else io.StringIO() if quiet
+               else sys.stdout)
 
     try:
         if style == 'summary':
