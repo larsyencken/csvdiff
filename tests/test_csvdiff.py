@@ -25,10 +25,11 @@ class TestCsvdiff(unittest.TestCase):
         self.a_file = path.join(self.examples, 'a.csv')
         self.b_file = path.join(self.examples, 'b.csv')
         self.diff_file = path.join(self.examples, 'diff.json')
+        self.bad_diff_file = path.join(self.examples, 'bad_diff.json')
         self.runner = CliRunner()
 
     def csvdiff_cmd(self, *args):
-        RunResult = namedtuple('RunResult', 'exit_code diff')
+        RunResult = namedtuple('RunResult', 'exit_code diff output')
         t = tempfile.NamedTemporaryFile(delete=True)
         result = self.runner.invoke(csvdiff.csvdiff_cmd,
                                     ('--output', t.name) + args)
@@ -37,10 +38,10 @@ class TestCsvdiff(unittest.TestCase):
             with open(t.name) as istream:
                 diff = json.load(istream)
 
-        return RunResult(result.exit_code, diff)
+        return RunResult(result.exit_code, diff, result.output)
 
     def patch_cmd(self, *args):
-        RunResult = namedtuple('RunResult', 'exit_code records')
+        RunResult = namedtuple('RunResult', 'exit_code records output')
         t = tempfile.NamedTemporaryFile(delete=True)
         result = self.runner.invoke(csvdiff.csvpatch_cmd,
                                     ('--output', t.name) + args)
@@ -49,7 +50,7 @@ class TestCsvdiff(unittest.TestCase):
             with open(t.name) as istream:
                 recs = list(csv.DictReader(istream))
 
-        return RunResult(result.exit_code, recs)
+        return RunResult(result.exit_code, recs, result.output)
 
     def test_summarize(self):
         lhs = [
@@ -74,21 +75,20 @@ class TestCsvdiff(unittest.TestCase):
             "1 rows changed (33.3%)\n"
         )
 
-    def test_needs_args(self):
+    def test_csvdiff_fails_without_enough_arguments(self):
         result = self.csvdiff_cmd()
-        assert result.exit_code != 0
+        self.assertEquals(result.exit_code, 2)
 
-    def test_needs_enough_arguments(self):
         result = self.csvdiff_cmd(self.a_file, self.b_file)
-        assert result.exit_code != 0
+        self.assertEquals(result.exit_code, 2)
 
-    def test_needs_valid_key(self):
+    def test_csvdiff_fails_without_valid_key(self):
         result = self.csvdiff_cmd('abcd', self.a_file, self.b_file)
         assert result.exit_code != 0
 
-    def test_diff_command_valid_usage(self):
+    def test_diff_command_valid_usage_with_difference(self):
         result = self.csvdiff_cmd('id', self.a_file, self.b_file)
-        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.exit_code, 1)
         diff = result.diff
         patch.validate(diff)
         assert patch.is_valid(diff)
@@ -212,6 +212,16 @@ class TestCsvdiff(unittest.TestCase):
             expected = list(csv.DictReader(istream))
 
         self.assertRecordsEqual(result.records, expected)
+
+    def test_patch_cmd_fails_when_json_is_invalid(self):
+        result = self.patch_cmd('-i', self.a_file, self.a_file)
+        self.assertEqual(result.exit_code, 2)
+        assert 'ERROR' in result.output
+
+    def test_patch_cmd_fails_when_json_doesnt_match_schema(self):
+        result = self.patch_cmd('-i', self.bad_diff_file, self.a_file)
+        self.assertEqual(result.exit_code, 2)
+        assert 'ERROR' in result.output
 
     def test_patch_add(self):
         orig = [

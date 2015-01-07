@@ -77,8 +77,16 @@ SCHEMA = {
 }
 
 
+def is_empty(diff):
+    "Are there any actual differences encoded in the delta?"
+    return not any([diff['added'], diff['changed'], diff['removed']])
+
+
 def is_valid(diff):
-    "Validate it against the schema."
+    """
+    Validate the diff against the schema, returning True if it matches, False
+    otherwise.
+    """
     try:
         validate(diff)
     except jsonschema.ValidationError:
@@ -88,6 +96,10 @@ def is_valid(diff):
 
 
 def validate(diff):
+    """
+    Check the diff against the schema, raising an exception if it doesn't
+    match.
+    """
     return jsonschema.validate(diff, SCHEMA)
 
 
@@ -162,9 +174,15 @@ def _update_records(indexed, deltas, strict=True):
 
 def load(istream, strict=True):
     "Deserialize a patch object."
-    diff = json.load(istream)
-    if strict:
-        jsonschema.validate(diff, SCHEMA)
+    try:
+        diff = json.load(istream)
+        if strict:
+            jsonschema.validate(diff, SCHEMA)
+    except ValueError:
+        raise InvalidPatchError('patch is not valid JSON')
+
+    except jsonschema.exceptions.ValidationError as e:
+        raise InvalidPatchError(e.message)
 
     return diff
 
@@ -273,3 +291,7 @@ def _iter_record_fields(recs):
     for r in recs:
         for v in r.values():
             yield v
+
+
+class InvalidPatchError(Exception):
+    pass

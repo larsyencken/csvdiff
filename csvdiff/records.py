@@ -6,7 +6,9 @@
 
 import csv
 
-from . import error
+
+class InvalidKeyError(Exception):
+    pass
 
 
 def load(file_or_stream):
@@ -24,7 +26,7 @@ def index(record_seq, index_columns):
             for r in record_seq
         }
     except KeyError as k:
-        error.abort('invalid column name {k} as key'.format(k=k))
+        raise InvalidKeyError('invalid column name {k} as key'.format(k=k))
 
 
 def save(record_seq, fieldnames, ostream):

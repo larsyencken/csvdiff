@@ -19,5 +19,5 @@ def abort(message=None):
     if DEBUG:
         raise FatalError(message)
 
-    print(message, file=sys.stderr)
-    sys.exit(1)
+    print('ERROR: {0}'.format(message), file=sys.stderr)
+    sys.exit(2)

@@ -15,8 +15,12 @@ import sys
 
 import click
 
-from . import records
-from . import patch
+from . import records, patch, error
+
+# exit codes for the command-line
+EXIT_SAME = 0
+EXIT_DIFFERENT = 1
+EXIT_ERROR = 2
 
 
 def diff_files(from_file, to_file, index_columns):
@@ -119,20 +123,29 @@ def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None):
                if output is None
                else open(output, 'w'))
 
-    if style == 'summary':
-        _diff_and_summarize(from_csv, to_csv, index_columns, ostream)
-    else:
-        compact = (style == 'compact')
-        _diff_files_to_stream(from_csv, to_csv, index_columns, ostream,
-                              compact=compact)
+    try:
+        if style == 'summary':
+            _diff_and_summarize(from_csv, to_csv, index_columns, ostream)
+        else:
+            compact = (style == 'compact')
+            _diff_files_to_stream(from_csv, to_csv, index_columns, ostream,
+                                  compact=compact)
 
-    ostream.close()
+    except records.InvalidKeyError as e:
+        error.abort(e.args[0])
+
+    finally:
+        ostream.close()
 
 
 def _diff_files_to_stream(from_csv, to_csv, index_columns, ostream,
                           compact=False):
     diff = diff_files(from_csv, to_csv, index_columns)
     patch.save(diff, ostream, compact=compact)
+    exit_code = (EXIT_SAME
+                 if patch.is_empty(diff)
+                 else EXIT_DIFFERENT)
+    sys.exit(exit_code)
 
 
 def _diff_and_summarize(from_csv, to_csv, index_columns, stream=sys.stdout):
@@ -143,6 +156,10 @@ def _diff_and_summarize(from_csv, to_csv, index_columns, stream=sys.stdout):
     to_records = records.load(to_csv)
     diff = patch.create(from_records, to_records, index_columns)
     _summarize_diff(diff, len(from_records), stream=stream)
+    exit_code = (EXIT_SAME
+                 if patch.is_empty(diff)
+                 else EXIT_DIFFERENT)
+    sys.exit(exit_code)
 
 
 def _summarize_diff(diff, orig_size, stream=sys.stdout):
@@ -191,6 +208,9 @@ def csvpatch_cmd(input_csv, input=None, output=None, strict=True):
 
     try:
         patch_file(patch_stream, fromcsv_stream, tocsv_stream, strict=strict)
+
+    except patch.InvalidPatchError as e:
+        error.abort('reading patch, {0}'.format(e.args[0]))
 
     finally:
         patch_stream.close()
