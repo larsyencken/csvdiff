@@ -3,8 +3,8 @@
 History
 -------
 
-dev
-~~~
+0.3.0 (2015-01-07)
+~~~~~~~~~~~~~~~~~~
 
 * Standardise patch format with a JSON schema.
 * Provide a matching csvpatch command applying diffs.
