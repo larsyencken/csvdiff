@@ -228,8 +228,10 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('manpage', 'csvdiff', u'compare two CSV files for differences',
-     [u'Lars Yencken'], 1)
+    ('manpage_csvdiff', 'csvdiff', u'compare two CSV files for differences',
+     [u'Lars Yencken'], 1),
+    ('manpage_csvpatch', 'csvpatch', u'apply a patch to a CSV file',
+     [u'Lars Yencken'], 1),
 ]
 
 # If true, show URL addresses after external links.
