@@ -31,12 +31,14 @@ setup(
     package_dir={'csvdiff': 'csvdiff'},
     entry_points={
         'console_scripts': [
-            'csvdiff = csvdiff:main',
+            'csvdiff = csvdiff:csvdiff_cmd',
+            'csvpatch = csvdiff:csvpatch_cmd',
         ],
     },
     include_package_data=True,
     install_requires=[
         'click>=3.3',
+        'jsonschema>=2.4.0',
     ],
     license="BSD",
     zip_safe=False,
@@ -50,6 +52,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
     ],
     test_suite='tests',
 )

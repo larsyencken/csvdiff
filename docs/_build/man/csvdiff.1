@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "CSVDIFF" "1" "December 29, 2014" "0.2.0" "csvdiff"
+.TH "CSVDIFF" "1" "January 07, 2015" "0.2.0" "csvdiff"
 .SH NAME
 csvdiff \- compare two CSV files for differences
 .
@@ -40,8 +40,10 @@ The \fBcsvdiff\fP command compares the contents of two CSV files and outputs any
 The options are as follows:
 .INDENT 0.0
 .TP
-.BI \-o \ OUTPUT
+.B \-o OUTPUT \-\-output=OUTPUT
 Write the JSON diff to the file OUTPUT instead of stdout.
+.UNINDENT
+.INDENT 0.0
 .TP
 .BI \-\-style\fB= STYLE
 Choose between three output styles ([compact]/pretty/summary).
@@ -154,7 +156,7 @@ $ csvdiff \-\-style=pretty id a.csv b.csv
 It gives us the full listing of added and removed rows, as well as a listing of what fields changed for that shared a key.
 .SH EXIT STATUS
 .sp
-The \fBcsvdiff\fP command exits 0 when no difference exists, >0 when a difference exists (or on usage error).
+The \fBcsvdiff\fP command exits 0 when no difference exists, 1 when a difference exists, 2 for a usage or other error.
 .SH LIMITATIONS
 .INDENT 0.0
 .IP \(bu 2
@@ -167,6 +169,9 @@ All fields are untyped and treated as strings.
 The full source is available at \fI\%https://github.com/larsyencken/csvdiff\fP
 .sp
 Please report bugs to \fI\%https://github.com/larsyencken/csvdiff/issues\fP
+.SH SEE ALSO
+.sp
+Check the manpage for \fBcsvpatch (1)\fP to look at applying diffs once they are generated.
 .SH AUTHOR
 Lars Yencken
 .SH COPYRIGHT

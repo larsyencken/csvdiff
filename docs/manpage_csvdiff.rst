@@ -14,8 +14,10 @@ The **csvdiff** command compares the contents of two CSV files and outputs any d
 
 The options are as follows:
 
--o OUTPUT       Write the JSON diff to the file OUTPUT instead of stdout.
---style=STYLE   Choose between three output styles ([compact]/pretty/summary).
+-o OUTPUT --output=OUTPUT
+                Write the JSON diff to the file OUTPUT instead of stdout.
+--style=STYLE
+                Choose between three output styles ([compact]/pretty/summary).
                 The compact and pretty formats output the entire diff;
                 summary outputs a count of rows added, removed and changed.
 
@@ -97,7 +99,7 @@ It gives us the full listing of added and removed rows, as well as a listing of 
 Exit status
 ===========
 
-The **csvdiff** command exits 0 when no difference exists, >0 when a difference exists (or on usage error).
+The **csvdiff** command exits 0 when no difference exists, 1 when a difference exists, 2 for a usage or other error.
 
 Limitations
 ===========
@@ -111,3 +113,8 @@ Bugs
 The full source is available at https://github.com/larsyencken/csvdiff
 
 Please report bugs to https://github.com/larsyencken/csvdiff/issues
+
+See also
+========
+
+Check the manpage for **csvpatch (1)** to look at applying diffs once they are generated.

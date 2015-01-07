@@ -3,6 +3,14 @@
 History
 -------
 
+dev
+~~~
+
+* Standardise patch format with a JSON schema.
+* Provide a matching csvpatch command applying diffs.
+* Add a man page and docs for csvpatch.
+* Use exit codes to indicate difference.
+
 0.2.0 (2014-12-30)
 ~~~~~~~~~~~~~~~~~~
 
