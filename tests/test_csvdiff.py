@@ -75,6 +75,22 @@ class TestCsvdiff(unittest.TestCase):
             "1 rows changed (33.3%)\n"
         )
 
+    def test_summarize_identical(self):
+        lhs = [
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'b', 'sheep': '12'},
+            {'name': 'c', 'sheep': '0'},
+        ]
+        diff = csvdiff.diff_records(lhs, lhs, ['name'])
+        assert patch.is_valid(diff)
+        assert not patch.is_typed(diff)
+        o = StringIO()
+        csvdiff._summarize_diff(diff, len(lhs), stream=o)
+        self.assertEqual(
+            o.getvalue(),
+            'files are identical\n'
+        )
+
     def test_csvdiff_fails_without_enough_arguments(self):
         result = self.csvdiff_cmd()
         self.assertEquals(result.exit_code, 2)
