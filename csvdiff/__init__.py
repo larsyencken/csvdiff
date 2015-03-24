@@ -190,7 +190,7 @@ def _summarize_diff(diff, orig_size, stream=sys.stdout):
             n_changed, 100 * n_changed / orig_size
         ), file=stream)
     else:
-        print('files are identical', file=stream)
+        print(u'files are identical', file=stream)
 
 
 @click.command()
