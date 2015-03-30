@@ -160,7 +160,7 @@ def _diff_and_summarize(from_csv, to_csv, index_columns, stream=sys.stdout):
     """
     Print a summary of the difference between the two files.
     """
-    from_records = records.load(from_csv)
+    from_records = list(records.load(from_csv))
     to_records = records.load(to_csv)
     diff = patch.create(from_records, to_records, index_columns)
     _summarize_diff(diff, len(from_records), stream=stream)

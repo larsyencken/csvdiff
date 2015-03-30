@@ -3,14 +3,15 @@
 
 from __future__ import absolute_import, print_function, division
 
-import os
-from os import path
-import unittest
-import json
-import tempfile
-from io import StringIO
 from collections import namedtuple
+from contextlib import contextmanager
+from io import StringIO
+from os import path
 import csv
+import json
+import os
+import tempfile
+import unittest
 
 import csvdiff
 from csvdiff import patch, records
@@ -39,6 +40,17 @@ class TestCsvdiff(unittest.TestCase):
                 diff = json.load(istream)
 
         return RunResult(result.exit_code, diff, result.output)
+
+    def csvdiff_summary_cmd(self, *args):
+        RunResult = namedtuple('RunResult', 'exit_code summary output')
+        t = tempfile.NamedTemporaryFile(delete=True)
+        test_args = ('--output', t.name, '--style', 'summary')
+        result = self.runner.invoke(csvdiff.csvdiff_cmd,
+                                    test_args + args)
+        with open(t.name, 'r') as istream:
+            summary = istream.read()
+
+        return RunResult(result.exit_code, summary, result.output)
 
     def patch_cmd(self, *args):
         RunResult = namedtuple('RunResult', 'exit_code records output')
@@ -74,6 +86,27 @@ class TestCsvdiff(unittest.TestCase):
             "1 rows added (33.3%)\n"
             "1 rows changed (33.3%)\n"
         )
+
+    def test_summarize_cmd(self):
+        lhs = [
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'b', 'sheep': '12'},
+            {'name': 'c', 'sheep': '0'},
+        ]
+        rhs = [
+            {'name': 'a', 'sheep': '7'},
+            {'name': 'c', 'sheep': '2'},
+            {'name': 'd', 'sheep': '8'},
+        ]
+        with tmp_csv_files(lhs, rhs) as (lhs_file, rhs_file):
+            result = self.csvdiff_summary_cmd('name', lhs_file, rhs_file)
+            self.assertEquals(result.exit_code, 1)
+            self.assertEquals(
+                result.summary,
+                "1 rows removed (33.3%)\n"
+                "1 rows added (33.3%)\n"
+                "1 rows changed (33.3%)\n"
+            )
 
     def test_summarize_identical(self):
         lhs = [
@@ -299,6 +332,28 @@ class TestCsvdiff(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+
+@contextmanager
+def tmp_csv_files(*args):
+    files = []
+    for arg in args:
+        t = tempfile.NamedTemporaryFile()
+        save_as_csv(arg, t.name)
+        files.append(t)
+
+    yield [f.name for f in files]
+
+
+def save_as_csv(records, filename):
+    with open(filename, 'w') as ostream:
+        header = sorted(records[0].keys())
+
+        writer = csv.DictWriter(ostream, header)
+
+        writer.writerow(dict(zip(header, header)))
+        for record in records:
+            writer.writerow(record)
 
 
 if __name__ == '__main__':
