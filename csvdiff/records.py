@@ -6,6 +6,8 @@
 
 import csv
 
+from . import error
+
 
 class InvalidKeyError(Exception):
     pass
@@ -16,7 +18,15 @@ def load(file_or_stream):
                if not hasattr(file_or_stream, 'read')
                else file_or_stream)
 
-    return csv.DictReader(istream)
+    return _safe_iterator(csv.DictReader(istream))
+
+
+def _safe_iterator(reader):
+    for lineno, r in enumerate(reader, 2):
+        if any(k is None for k in r):
+            error.abort('CSV parse error on line {}'.format(lineno))
+
+        yield r
 
 
 def index(record_seq, index_columns):
