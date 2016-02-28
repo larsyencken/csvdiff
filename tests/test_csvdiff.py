@@ -156,6 +156,42 @@ class TestCsvdiff(unittest.TestCase):
 
         self.assertPatchesEqual(diff, expected)
 
+    def test_diff_records_float_values(self):
+        lhs = [
+            {'name': 'a', 'sheep': 7.003},
+            {'name': 'b', 'sheep': 12.},
+            {'name': 'c', 'sheep': 0.},
+            {'name': 'e', 'sheep': 3.02},
+        ]
+        rhs = [
+            {'name': 'a', 'sheep': 7.001},
+            {'name': 'c', 'sheep': 2.},
+            {'name': 'd', 'sheep': 8.},
+            {'name': 'e', 'sheep': 3.01},
+        ]
+
+        diff = csvdiff.diff_records(lhs, rhs, ['name'], precision=2)
+        assert patch.is_valid(diff)
+        assert not patch.is_typed(diff)
+
+        # check the contents of the diff
+        self.assertEqual(diff['added'], [
+            {'name': 'd', 'sheep': 8.}
+        ])
+        self.assertEqual(diff['removed'], [
+            {'name': 'b', 'sheep': 12.}
+        ])
+        self.assertEqual(diff['changed'], [
+            {'key': ['c'],
+             'fields': {'sheep': {'from': 0., 'to': 2.}}},
+            {'key': ['e'],
+             'fields': {'sheep': {'from': 3.02, 'to': 3.01}}},
+        ])
+
+        # check that we can apply the diff
+        patched = csvdiff.patch_records(diff, lhs)
+        self.assertRecordsEqual(rhs, patched, precision=2)
+
     def test_diff_records_str_values(self):
         lhs = [
             {'name': 'a', 'sheep': '7'},
@@ -316,6 +352,12 @@ class TestCsvdiff(unittest.TestCase):
             {'name': 'a', 'type': '1', 'sheep': '8'},
         ]
         self.assertRecordsEqual(patch.apply(diff, orig), expected)
+
+    def test_almost_equal(self):
+        assert patch._almost_equal(1., 1., 10)
+        assert not patch._almost_equal(1., 2., 10)
+        assert patch._almost_equal(1.1, 1.2, 0)
+        assert not patch._almost_equal(1.1, 1.2, 1)
 
     def assertPatchesEqual(self, lhs, rhs):
         self.assertEqual(lhs['_index'], rhs['_index'])

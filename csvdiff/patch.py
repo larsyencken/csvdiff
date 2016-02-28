@@ -207,15 +207,17 @@ def create(from_records, to_records, index_columns):
     return create_indexed(from_indexed, to_indexed, index_columns)
 
 
-def create_indexed(from_indexed, to_indexed, index_columns):
+def create_indexed(from_indexed, to_indexed, index_columns,
+                   precision=None):
     # examine keys for overlap
     removed, added, shared = _compare_keys(from_indexed, to_indexed)
 
     # check for changed rows
-    changed = _compare_rows(from_indexed, to_indexed, shared)
+    changed = _compare_rows(from_indexed, to_indexed, shared,
+                            precision=precision)
 
     diff = _assemble(removed, added, changed, from_indexed, to_indexed,
-                     index_columns)
+                     index_columns, precision=precision)
 
     return diff
 
@@ -229,21 +231,51 @@ def _compare_keys(from_recs, to_recs):
     return removed, added, shared
 
 
-def _compare_rows(from_recs, to_recs, keys):
+def _compare_rows(from_recs, to_recs, keys, precision=None):
     "Return the set of keys which have changed."
     return set(
         k for k in keys
-        if sorted(from_recs[k].items()) != sorted(to_recs[k].items())
+        if _records_differ(from_recs[k], to_recs[k], precision=precision)
     )
 
 
-def _assemble(removed, added, changed, from_recs, to_recs, index_columns):
+def _records_differ(lhs, rhs, precision=None):
+    if len(lhs) != len(rhs):
+        return True
+
+    lhs_items = sorted(lhs.items())
+    rhs_items = sorted(rhs.items())
+
+    return any(lk != rk or _values_differ(lv, rv, precision=precision)
+               for (lk, lv), (rk, rv) in zip(lhs_items, rhs_items))
+
+
+def _values_differ(lhs, rhs, precision=None):
+    if lhs == rhs:
+        return False
+
+    if (precision is not None and
+            isinstance(lhs, float) and
+            isinstance(rhs, float)):
+        return not _almost_equal(lhs, rhs, precision)
+
+    return True
+
+
+def _almost_equal(a, b, precision):
+    return (a == b or
+            int(a * 10**precision) == int(b * 10**precision))
+
+
+def _assemble(removed, added, changed, from_recs, to_recs, index_columns,
+              precision=None):
     diff = {}
     diff['_index'] = index_columns
     diff['added'] = records.sort(to_recs[k] for k in added)
     diff['removed'] = records.sort(from_recs[k] for k in removed)
     diff['changed'] = sorted(({'key': list(k),
-                               'fields': record_diff(from_recs[k], to_recs[k])}
+                               'fields': record_diff(from_recs[k], to_recs[k],
+                                                     precision=precision)}
                               for k in changed),
                              key=_change_key)
     return diff
@@ -253,13 +285,13 @@ def _change_key(c):
     return tuple(c['key'])
 
 
-def record_diff(lhs, rhs):
+def record_diff(lhs, rhs, precision=None):
     "Diff an individual row."
     delta = {}
     for k in set(lhs).union(rhs):
         from_ = lhs[k]
         to_ = rhs[k]
-        if from_ != to_:
+        if _values_differ(from_, to_, precision=precision):
             delta[k] = {'from': from_, 'to': to_}
 
     return delta
