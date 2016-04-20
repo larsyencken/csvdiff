@@ -19,7 +19,7 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 setup(
     name='csvdiff',
-    version='0.3.0',
+    version='0.3.1',
     description='Generate a diff between two CSV files.',
     long_description=readme + '\n\n' + history,
     author='Lars Yencken',

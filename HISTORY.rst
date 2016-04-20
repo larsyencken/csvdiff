@@ -3,6 +3,12 @@
 History
 -------
 
+0.3.1 (2016-04-20)
+~~~~~~~~~~~~~~~~~~
+
+* Fix a bug in summary mode.
+* Check for rows bleeding into one another.
+
 0.3.0 (2015-01-07)
 ~~~~~~~~~~~~~~~~~~
 
