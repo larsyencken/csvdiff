@@ -7,20 +7,23 @@
 
 from __future__ import absolute_import, print_function, division
 
+import sys
+
+import click
+
+from . import records, patch, error
+
+
 __author__ = 'Lars Yencken'
 __email__ = 'lars@yencken.org'
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
-import sys
 
 if sys.version_info.major == 2:
     import StringIO as io
 else:
     import io
 
-import click
-
-from . import records, patch, error
 
 # exit codes for the command-line
 EXIT_SAME = 0
