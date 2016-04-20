@@ -3,6 +3,11 @@
 History
 -------
 
+dev
+~~~
+
+* Add the --sep option for different delimiters.
+
 0.3.1 (2016-04-20)
 ~~~~~~~~~~~~~~~~~~
 

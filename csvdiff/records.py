@@ -13,12 +13,12 @@ class InvalidKeyError(Exception):
     pass
 
 
-def load(file_or_stream):
+def load(file_or_stream, sep=','):
     istream = (open(file_or_stream)
                if not hasattr(file_or_stream, 'read')
                else file_or_stream)
 
-    return _safe_iterator(csv.DictReader(istream))
+    return _safe_iterator(csv.DictReader(istream, delimiter=sep))
 
 
 def _safe_iterator(reader):

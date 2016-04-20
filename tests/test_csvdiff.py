@@ -25,6 +25,8 @@ class TestCsvdiff(unittest.TestCase):
         self.examples = path.join(path.dirname(__file__), 'examples')
         self.a_file = path.join(self.examples, 'a.csv')
         self.b_file = path.join(self.examples, 'b.csv')
+        self.a_file_tsv = path.join(self.examples, 'a.tsv')
+        self.b_file_tsv = path.join(self.examples, 'b.tsv')
         self.diff_file = path.join(self.examples, 'diff.json')
         self.bad_diff_file = path.join(self.examples, 'bad_diff.json')
         self.runner = CliRunner()
@@ -137,6 +139,28 @@ class TestCsvdiff(unittest.TestCase):
 
     def test_diff_command_valid_usage_with_difference(self):
         result = self.csvdiff_cmd('id', self.a_file, self.b_file)
+        self.assertEqual(result.exit_code, 1)
+        diff = result.diff
+        patch.validate(diff)
+        assert patch.is_valid(diff)
+
+        expected = {
+            '_index': ['id'],
+            'added': [{'id': '5', 'name': 'mira', 'amount': '81'}],
+            'removed': [{'id': '2', 'name': 'eva', 'amount': '63'}],
+            'changed': [
+                {'key': ['1'],
+                 'fields': {'amount': {'from': '20', 'to': '23'}}},
+                {'key': ['6'],
+                 'fields': {'amount': {'from': '10', 'to': '13'}}},
+            ],
+        }
+
+        self.assertPatchesEqual(diff, expected)
+
+    def test_diff_command_valid_usage_with_separator(self):
+        result = self.csvdiff_cmd('--sep', '\t', 'id',
+                                  self.a_file_tsv, self.b_file_tsv)
         self.assertEqual(result.exit_code, 1)
         diff = result.diff
         patch.validate(diff)
