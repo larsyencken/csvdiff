@@ -39,6 +39,7 @@ setup(
     install_requires=[
         'click>=3.3',
         'jsonschema>=2.4.0',
+        'six>=1.10.0',
     ],
     license="BSD",
     zip_safe=False,

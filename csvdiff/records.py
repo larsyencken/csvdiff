@@ -4,6 +4,8 @@
 #  csvdiff
 #
 
+import six
+
 import csv
 
 from . import error
@@ -17,6 +19,10 @@ def load(file_or_stream, sep=','):
     istream = (open(file_or_stream)
                if not hasattr(file_or_stream, 'read')
                else file_or_stream)
+
+    # unicode delimiters are not ok in Python 2
+    if six.PY2 and isinstance(sep, six.text_type):
+        sep = sep.encode('utf8')
 
     return _safe_iterator(csv.DictReader(istream, delimiter=sep))
 
