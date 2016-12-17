@@ -31,7 +31,7 @@ class TestCsvdiff(unittest.TestCase):
         self.bad_diff_file = path.join(self.examples, 'bad_diff.json')
         self.runner = CliRunner()
 
-    def csvdiff_cmd(self, *args):
+    def csvdiff_cmd(self, *args, **kwargs):
         RunResult = namedtuple('RunResult', 'exit_code diff output')
         t = tempfile.NamedTemporaryFile(delete=True)
         result = self.runner.invoke(csvdiff.csvdiff_cmd,
@@ -273,7 +273,43 @@ class TestCsvdiff(unittest.TestCase):
         # check that we can apply the diff
         patched = csvdiff.patch_records(diff, lhs)
         self.assertRecordsEqual(rhs, patched)
-
+    
+    def test_diff_with_valid_ignore(self):
+        """
+            If you pass the diff command a list of valid columns (ones that exist in the files) to ignore then these columns should
+            be ignored when the diff is carried out.
+            This test will use the same diff tests as above, but will ignore the columns that have changed
+            so that the command will report the files as identical
+        """
+        
+        result = self.csvdiff_cmd('id', self.a_file, self.b_file, ignore=['amount',])
+        self.assertEqual(result.exit_code, 1)
+        diff = result.diff
+        patch.validate(diff)
+        assert patch.is_valid(diff)
+        o = StringIO()
+        csvdiff._summarize_diff(diff, len(self.a_file), stream=o)
+        self.assertEqual(
+            o.getvalue(),
+            'files are identical\n'
+        )
+        
+    def test_diff_with_missing_ignore_column(self):
+        """
+            If you try to pass an ignore column which doesn't exist in the files which are being compared then
+            you should get an "Invalid Ignore Column" error.
+        """
+        result = self.csvdiff_cmd('id', self.a_file, self.b_file, ignore=['abcd',])
+        assert result.exit_code > 1
+    
+    def test_diff_with_index_as_ignore_field(self):
+        """
+            If you try to pass an ignore column which is the same as one of the index columns then you should
+            get an "Ignore Column is the same as an Index Column" error.
+        """
+        result = self.csvdiff_cmd('id', self.a_file, self.b_file, ignore=['id',])
+        assert result.exit_code > 1
+    
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
 
