@@ -46,3 +46,5 @@ docs/_build
 env
 
 .DS_Store
+
+.settings/org.eclipse.core.resources.prefs
