@@ -10,4 +10,4 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Jason Marshall <j.j.marshall@kent.ac.uk>
