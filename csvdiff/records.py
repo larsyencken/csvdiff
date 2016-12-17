@@ -37,13 +37,20 @@ def _safe_iterator(reader):
 
 def index(record_seq, index_columns):
     try:
-        return {
+        obj= {
             tuple(r[i] for i in index_columns): r
             for r in record_seq
         }
+        
+        return obj
     except KeyError as k:
         raise InvalidKeyError('invalid column name {k} as key'.format(k=k))
 
+def filter_ignored (sequence, ignore_columns):
+    for key in sequence:
+        for i in ignore_columns:
+            sequence[key].pop(i)
+    return sequence
 
 def save(record_seq, fieldnames, ostream):
     writer = csv.DictWriter(ostream, fieldnames)
