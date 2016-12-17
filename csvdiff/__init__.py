@@ -126,8 +126,10 @@ class CSVType(click.ParamType):
               help="Don't output anything, just use exit codes")
 @click.option('--sep', default=',',
               help='Separator to use between fields [default: comma]')
+@click.option('--ignore','-i', type=CSVType(), 
+              help='a comma seperated list of columns to ignore from the comparisson')
 def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None,
-                sep=',', quiet=False):
+                sep=',', quiet=False, ignore=None):
     """
     Compare two csv files to see what rows differ between them. The files
     are each expected to have a header row, and for each row to be uniquely
