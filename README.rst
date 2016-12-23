@@ -8,9 +8,6 @@ csvdiff
 .. image:: https://travis-ci.org/larsyencken/csvdiff.png?branch=master
         :target: https://travis-ci.org/larsyencken/csvdiff
 
-.. image:: https://pypip.in/d/csvdiff/badge.png
-        :target: https://crate.io/packages/csvdiff
-
 Overview
 --------
 
