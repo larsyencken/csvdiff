@@ -196,13 +196,17 @@ def save(diff, stream=sys.stdout, compact=False):
     json.dump(diff, stream, **flags)
 
 
-def create(from_records, to_records, index_columns):
+def create(from_records, to_records, index_columns, ignore_columns=None):
     """
     Diff two sets of records, using the index columns as the primary key for
     both datasets.
     """
     from_indexed = records.index(from_records, index_columns)
     to_indexed = records.index(to_records, index_columns)
+    
+    if ignore_columns is not None:
+        from_indexed = records.filter_ignored(from_indexed, ignore_columns)
+        to_indexed = records.filter_ignored(to_indexed, ignore_columns)
 
     return create_indexed(from_indexed, to_indexed, index_columns)
 
