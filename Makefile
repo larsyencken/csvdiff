@@ -27,7 +27,7 @@ clean-pyc:
 lint:
 	flake8 csvdiff tests
 
-test:
+test: lint
 	python setup.py test
 
 test-all:
