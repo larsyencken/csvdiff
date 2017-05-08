@@ -40,7 +40,8 @@ def diff_files(from_file, to_file, index_columns, sep=',', ignored_columns=None)
         with open(to_file) as to_stream:
             from_records = records.load(from_stream, sep=sep)
             to_records = records.load(to_stream, sep=sep)
-            return patch.create(from_records, to_records, index_columns, ignore_columns=ignored_columns)
+            return patch.create(from_records, to_records, index_columns,
+                                ignore_columns=ignored_columns)
 
 
 def diff_records(from_records, to_records, index_columns):
@@ -126,8 +127,8 @@ class CSVType(click.ParamType):
               help="Don't output anything, just use exit codes")
 @click.option('--sep', default=',',
               help='Separator to use between fields [default: comma]')
-@click.option('--ignore_columns','-i', type=CSVType(), 
-              help='a comma seperated list of columns to ignore from the comparisson')
+@click.option('--ignore_columns', '-i', type=CSVType(),
+              help='a comma seperated list of columns to ignore from the comparison')
 def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None,
                 sep=',', quiet=False, ignore_columns=None):
     """
@@ -135,12 +136,12 @@ def csvdiff_cmd(index_columns, from_csv, to_csv, style=None, output=None,
     are each expected to have a header row, and for each row to be uniquely
     identified by one or more indexing columns.
     """
-    
+
     if ignore_columns is not None:
         for i in ignore_columns:
             if i in index_columns:
                 error.abort("You can't ignore an index column")
-                
+
     ostream = (open(output, 'w') if output
                else io.StringIO() if quiet
                else sys.stdout)
