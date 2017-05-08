@@ -13,6 +13,7 @@ help:
 
 clean: clean-build clean-pyc
 	rm -fr htmlcov/
+	rm -rf env/
 
 clean-build:
 	rm -fr build/
@@ -24,11 +25,16 @@ clean-pyc:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 
-lint:
-	flake8 csvdiff tests
+env: requirements.txt requirements-dev.txt
+	test -d env || virtualenv env
+	env/bin/pip install -r requirements-dev.txt
+	touch env
 
-test:
-	python setup.py test
+lint: env
+	env/bin/flake8 --config=.flake8 csvdiff tests
+
+test: lint
+	env/bin/python setup.py test
 
 test-all:
 	tox

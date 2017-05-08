@@ -203,7 +203,7 @@ def create(from_records, to_records, index_columns, ignore_columns=None):
     """
     from_indexed = records.index(from_records, index_columns)
     to_indexed = records.index(to_records, index_columns)
-    
+
     if ignore_columns is not None:
         from_indexed = records.filter_ignored(from_indexed, ignore_columns)
         to_indexed = records.filter_ignored(to_indexed, ignore_columns)

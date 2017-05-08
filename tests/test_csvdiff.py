@@ -34,11 +34,12 @@ class TestCsvdiff(unittest.TestCase):
     def csvdiff_cmd(self, *args, **kwargs):
         RunResult = namedtuple('RunResult', 'exit_code diff output')
         t = tempfile.NamedTemporaryFile(delete=True)
-        
-        result = self.runner.invoke(csvdiff.csvdiff_cmd,
-                        ('--output', t.name) + args)
-        
-        
+
+        result = self.runner.invoke(
+            csvdiff.csvdiff_cmd,
+            ('--output', t.name) + args
+        )
+
         diff = None
         if path.exists(t.name) and os.stat(t.name).st_size:
             with open(t.name) as istream:
@@ -50,12 +51,19 @@ class TestCsvdiff(unittest.TestCase):
         RunResult = namedtuple('RunResult', 'exit_code summary output')
         t = tempfile.NamedTemporaryFile(delete=True)
         if "ignore_columns" in kwargs:
-            result = self.runner.invoke(csvdiff.csvdiff_cmd,
-                                    ('--output', t.name, '--style', 'summary','--ignore_columns', kwargs['ignore_columns']) + args)
+            result = self.runner.invoke(
+                csvdiff.csvdiff_cmd,
+                ('--output', t.name,
+                 '--style', 'summary',
+                 '--ignore_columns', kwargs['ignore_columns']) + args
+            )
         else:
-            result = self.runner.invoke(csvdiff.csvdiff_cmd,
-                                    ('--output', t.name,'--style', 'summary')  + args)
-        
+            result = self.runner.invoke(
+                csvdiff.csvdiff_cmd,
+                ('--output', t.name,
+                 '--style', 'summary') + args,
+            )
+
         with open(t.name, 'r') as istream:
             summary = istream.read()
 
@@ -280,39 +288,39 @@ class TestCsvdiff(unittest.TestCase):
         # check that we can apply the diff
         patched = csvdiff.patch_records(diff, lhs)
         self.assertRecordsEqual(rhs, patched)
-    
+
     def test_diff_with_valid_ignore(self):
         """
-            If you pass the diff command a list of valid columns (ones that exist in the files) to ignore then these columns should
-            be ignored when the diff is carried out.
-            This test will use the same diff tests as above, but will ignore the columns that have changed
-            so that the command will report the files as identical
+        If you pass the diff command a list of valid columns (ones that exist in the files) to
+        ignore then these columns should be ignored when the diff is carried out.
+
+        This test will use the same diff tests as above, but will ignore the columns that have
+        changed so that the command will report the files as identical
         """
         rhs = [
-            {'name': 'a', 'sheep': '7' , 'cows': '10'},
+            {'name': 'a', 'sheep': '7', 'cows': '10'},
             {'name': 'b', 'sheep': '12', 'cows': '10'},
-            {'name': 'c', 'sheep': '0' , 'cows': '10'},
+            {'name': 'c', 'sheep': '0', 'cows': '10'},
         ]
-        
+
         lhs = [
-            {'name': 'a', 'sheep': '7' , 'cows': '11'},
+            {'name': 'a', 'sheep': '7', 'cows': '11'},
             {'name': 'b', 'sheep': '12', 'cows': '12'},
-            {'name': 'c', 'sheep': '0' , 'cows': '13'},
+            {'name': 'c', 'sheep': '0', 'cows': '13'},
         ]
-        
+
         with tmp_csv_files(lhs, rhs) as (lhs_file, rhs_file):
             result = self.csvdiff_summary_cmd('name', lhs_file, rhs_file, ignore_columns='cows')
-            self.assertEquals(result.exit_code, 0) #exit code 0 means the files are the same.
-            
-    
+            self.assertEquals(result.exit_code, 0)
+
     def test_diff_with_index_as_ignore_field(self):
         """
-            If you try to pass an ignore column which is the same as one of the index columns then you should
-            get an "Ignore Column is the same as an Index Column" error.
+        If you try to pass an ignore column which is the same as one of the index columns then
+        you should get an "Ignore Column is the same as an Index Column" error.
         """
         result = self.csvdiff_summary_cmd('id', self.a_file, self.b_file, ignore_columns='id')
         assert result.exit_code > 1
-    
+
     def test_patch_schema_is_valid(self):
         assert not patch.is_valid({})
 
