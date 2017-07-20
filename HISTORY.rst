@@ -3,8 +3,8 @@
 History
 -------
 
-dev
-~~~
+0.3.3 (2017-07-20)
+~~~~~~~~~~~~~~~~~~
 
 * Add the --significance option to limit to significant figures.
 
