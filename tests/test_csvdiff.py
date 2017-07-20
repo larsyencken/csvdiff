@@ -55,7 +55,7 @@ class TestCsvdiff(unittest.TestCase):
                 csvdiff.csvdiff_cmd,
                 ('--output', t.name,
                  '--style', 'summary',
-                 '--ignore_columns', kwargs['ignore_columns']) + args
+                 '--ignore-columns', kwargs['ignore_columns']) + args
             )
         else:
             result = self.runner.invoke(

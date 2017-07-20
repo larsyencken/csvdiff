@@ -102,10 +102,19 @@ Or look at the full diff pretty printed, to make it more readable::
 
 If you want to ignore a column from the comparison then you can do so by specifying a comma seperated list of column names to ignore. For example::
 
-    $ csvdiff --style=summary --ignore_columns=amount id a.csv b.csv
+    $ csvdiff --style=summary --ignore-columns=amount id a.csv b.csv
     1 rows removed (20.0%)
     1 rows added (20.0%)
     0 rows changed (0%)
+
+You can also choose to compare numeric fields only up to a certain number of significant figures. Use negative significant figures for orders of magnitude::
+
+    $ csvdiff --style=summary id a.csv c.csv
+    0 rows removed (0.0%)
+    0 rows added (0.0%)
+    2 rows changed (40.0%)
+    $ csvdiff --style=summary id --significance=-1 a.csv c.csv
+    files are identical
 
 
 Diffs generated this way contain all the data that's changed, and can be reapplied later if the original data changes. For example, suppose more data gets added to ``a.csv``, giving us ``a-plus.csv``::
