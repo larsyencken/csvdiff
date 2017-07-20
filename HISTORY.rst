@@ -3,10 +3,11 @@
 History
 -------
 
-dev
-~~~
+0.3.2 (2017-07-20)
+~~~~~~~~~~~~~~~~~~
 
 * Add the --sep option for different delimiters.
+* Fix a bug when a patched document becomes empty (#29).
 
 0.3.1 (2016-04-20)
 ~~~~~~~~~~~~~~~~~~
