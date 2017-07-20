@@ -299,3 +299,37 @@ def _iter_record_fields(recs):
 
 class InvalidPatchError(Exception):
     pass
+
+
+def filter_significance(diff, significance):
+    """
+    Prune any changes in the patch which are due to numeric changes less than this level of
+    significance.
+    """
+    changed = diff['changed']
+
+    # remove individual field changes that are significant
+    reduced = [{'key': delta['key'],
+                'fields': {k: v
+                           for k, v in delta['fields'].items()
+                           if _is_significant(v, significance)}}
+               for delta in changed]
+
+    # call a key changed only if it still has significant changes
+    filtered = [delta for delta in reduced if delta['fields']]
+
+    diff = diff.copy()
+    diff['changed'] = filtered
+    return diff
+
+
+def _is_significant(change, significance):
+    "Return True if a change is genuinely significant given our tolerance."
+    try:
+        a = float(change['from'])
+        b = float(change['to'])
+
+    except ValueError:
+        return True
+
+    return int(a * 10 ** significance) != int(b * 10 ** significance)
