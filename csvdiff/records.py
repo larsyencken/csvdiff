@@ -24,15 +24,26 @@ def load(file_or_stream, sep=','):
     if six.PY2 and isinstance(sep, six.text_type):
         sep = sep.encode('utf8')
 
-    return _safe_iterator(csv.DictReader(istream, delimiter=sep))
+    return SafeDictReader(istream, sep=sep)
 
 
-def _safe_iterator(reader):
-    for lineno, r in enumerate(reader, 2):
-        if any(k is None for k in r):
-            error.abort('CSV parse error on line {}'.format(lineno))
+class SafeDictReader:
+    """
+    A CSV reader that streams records but gives nice errors if lines fail to parse.
+    """
+    def __init__(self, istream, sep=None):
+        self.reader = csv.DictReader(istream, delimiter=sep)
 
-        yield r
+    def __iter__(self):
+        for lineno, r in enumerate(self.reader, 2):
+            if any(k is None for k in r):
+                error.abort('CSV parse error on line {}'.format(lineno))
+
+            yield r
+
+    @property
+    def fieldnames(self):
+        return self.reader._fieldnames
 
 
 def index(record_seq, index_columns):
