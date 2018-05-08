@@ -324,7 +324,9 @@ def filter_significance(diff, significance):
 
 
 def _is_significant(change, significance):
-    "Return True if a change is genuinely significant given our tolerance."
+    """
+    Return True if a change is genuinely significant given our tolerance.
+    """
     try:
         a = float(change['from'])
         b = float(change['to'])
@@ -332,4 +334,4 @@ def _is_significant(change, significance):
     except ValueError:
         return True
 
-    return int(a * 10 ** significance) != int(b * 10 ** significance)
+    return abs(a - b) > 10 ** (-significance)
