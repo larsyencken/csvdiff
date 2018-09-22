@@ -5,9 +5,9 @@
 #  csvdiff
 #
 
-from __future__ import absolute_import, print_function, division
-
 import sys
+from typing.io import TextIO
+import io
 
 import click
 
@@ -17,12 +17,6 @@ from . import records, patch, error
 __author__ = 'Lars Yencken'
 __email__ = 'lars@yencken.org'
 __version__ = '0.3.1'
-
-
-if sys.version_info.major == 2:
-    import StringIO as io
-else:
-    import io
 
 
 # exit codes for the command-line
@@ -52,8 +46,8 @@ def diff_records(from_records, to_records, index_columns):
     return patch.create(from_records, to_records, index_columns)
 
 
-def patch_file(patch_stream, fromcsv_stream, tocsv_stream, strict=True,
-               sep=','):
+def patch_file(patch_stream: TextIO, fromcsv_stream: TextIO, tocsv_stream: TextIO,
+               strict: bool=True, sep: str=','):
     """
     Apply the patch to the source CSV file, and save the result to the target
     file.
