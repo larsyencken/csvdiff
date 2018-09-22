@@ -33,11 +33,14 @@ env: requirements.txt requirements-dev.txt
 lint: env
 	env/bin/flake8 --config=.flake8 csvdiff tests
 
-test: lint
+test: lint typecheck
 	env/bin/python setup.py test
 
 test-all:
 	tox
+
+typecheck: env
+	env/bin/mypy --ignore-missing-imports csvdiff
 
 coverage:
 	coverage run --source csvdiff setup.py test

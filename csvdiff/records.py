@@ -4,49 +4,50 @@
 #  csvdiff
 #
 
-import six
-
+from typing.io import TextIO
+from typing import Any, Dict, Tuple, Iterator, List, Sequence
 import csv
 
 from . import error
+
+
+Column = str
+PrimaryKey = Tuple[str, ...]
+Record = Dict[Column, Any]
+Index = Dict[PrimaryKey, Record]
 
 
 class InvalidKeyError(Exception):
     pass
 
 
-def load(file_or_stream, sep=','):
-    istream = (open(file_or_stream)
-               if not hasattr(file_or_stream, 'read')
-               else file_or_stream)
-
-    # unicode delimiters are not ok in Python 2
-    if six.PY2 and isinstance(sep, six.text_type):
-        sep = sep.encode('utf8')
-
-    return SafeDictReader(istream, sep=sep)
-
-
 class SafeDictReader:
     """
     A CSV reader that streams records but gives nice errors if lines fail to parse.
     """
-    def __init__(self, istream, sep=None):
+    def __init__(self, istream: TextIO, sep: str=',') -> None:
         self.reader = csv.DictReader(istream, delimiter=sep)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Record]:
         for lineno, r in enumerate(self.reader, 2):
             if any(k is None for k in r):
                 error.abort('CSV parse error on line {}'.format(lineno))
 
-            yield r
+            yield dict(r)
 
     @property
     def fieldnames(self):
         return self.reader._fieldnames
 
 
-def index(record_seq, index_columns):
+def load(file_or_stream: Any, sep: str=',') -> SafeDictReader:
+    istream = (open(file_or_stream)
+               if not hasattr(file_or_stream, 'read')
+               else file_or_stream)
+    return SafeDictReader(istream, sep=sep)
+
+
+def index(record_seq: Iterator[Record], index_columns: List[str]) -> Index:
     try:
         obj = {
             tuple(r[i] for i in index_columns): r
@@ -54,27 +55,32 @@ def index(record_seq, index_columns):
         }
 
         return obj
+
     except KeyError as k:
         raise InvalidKeyError('invalid column name {k} as key'.format(k=k))
 
 
-def filter_ignored(sequence, ignore_columns):
-    for key in sequence:
-        for i in ignore_columns:
-            sequence[key].pop(i)
-    return sequence
+def filter_ignored(index: Index, ignore_columns: List[Column]) -> Index:
+    for record in index.values():
+        # edit the record in-place
+        for column in ignore_columns:
+            del record[column]
+
+    return index
 
 
-def save(record_seq, fieldnames, ostream):
+def save(records: Sequence[Record], fieldnames: List[Column], ostream: TextIO):
     writer = csv.DictWriter(ostream, fieldnames)
     writer.writeheader()
-    for r in record_seq:
+    for r in records:
         writer.writerow(r)
 
 
-def sort(recs):
-    return sorted(recs, key=_record_key)
+def sort(records: Sequence[Record]) -> List[Record]:
+    "Sort records into a canonical order, suitable for comparison."
+    return sorted(records, key=_record_key)
 
 
-def _record_key(r):
-    return sorted(r.items())
+def _record_key(record: Record) -> List[Tuple[Column, str]]:
+    "An orderable representation of this record."
+    return sorted(record.items())
