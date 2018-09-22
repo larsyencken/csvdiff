@@ -8,8 +8,6 @@ from typing.io import TextIO
 from typing import Any, Dict, Tuple, Iterator, List, Sequence
 import csv
 
-import six
-
 from . import error
 
 
@@ -27,7 +25,7 @@ class SafeDictReader:
     """
     A CSV reader that streams records but gives nice errors if lines fail to parse.
     """
-    def __init__(self, istream: TextIO, sep=None) -> None:
+    def __init__(self, istream: TextIO, sep: str=',') -> None:
         self.reader = csv.DictReader(istream, delimiter=sep)
 
     def __iter__(self) -> Iterator[Record]:
@@ -46,11 +44,6 @@ def load(file_or_stream: Any, sep: str=',') -> SafeDictReader:
     istream = (open(file_or_stream)
                if not hasattr(file_or_stream, 'read')
                else file_or_stream)
-
-    # unicode delimiters are not ok in Python 2
-    if six.PY2 and isinstance(sep, six.text_type):
-        sep = sep.encode('utf8')
-
     return SafeDictReader(istream, sep=sep)
 
 

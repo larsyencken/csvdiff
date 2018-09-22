@@ -328,8 +328,7 @@ class TestCsvdiff(unittest.TestCase):
         result = self.patch_cmd('-i', self.diff_file, self.a_file)
         self.assertEqual(result.exit_code, 0)
 
-        with open(self.b_file) as istream:
-            expected = list(csv.DictReader(istream))
+        expected = list(records.load(self.b_file))
 
         self.assertRecordsEqual(result.records, expected)
 
