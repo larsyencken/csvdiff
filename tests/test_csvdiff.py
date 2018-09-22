@@ -387,6 +387,25 @@ class TestCsvdiff(unittest.TestCase):
         ]
         self.assertRecordsEqual(patch.apply(diff, orig), expected)
 
+    def test_significance(self):
+        diff = {'changed': [
+            {'key': ['a'], 'fields': {'pi': {'from': '3', 'to': '3.1'}}},
+            {'key': ['a'], 'fields': {'pi': {'from': '3.1', 'to': '3.14'}}},
+            {'key': ['a'], 'fields': {'pi': {'from': '3.14', 'to': '3.142'}}}
+        ]}
+
+        d1 = patch.filter_significance(diff, 0)
+        self.assertEquals(d1['changed'], [])
+
+        d2 = patch.filter_significance(diff, 1)
+        self.assertEquals(len(d2['changed']), 1)
+
+        d3 = patch.filter_significance(diff, 2)
+        self.assertEquals(len(d3['changed']), 2)
+
+        d4 = patch.filter_significance(diff, 3)
+        self.assertEquals(len(d4['changed']), 3)
+
     def assertPatchesEqual(self, lhs, rhs):
         self.assertEqual(lhs['_index'], rhs['_index'])
         self.assertRecordsEqual(lhs['added'], rhs['added'])
