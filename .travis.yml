@@ -9,4 +9,4 @@ python:
   - "pypy3.5"
 
 # command to run tests, e.g. python setup.py test
-script: make test
+script: pip install virtualenv && make test
