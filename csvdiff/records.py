@@ -7,6 +7,7 @@
 from typing.io import TextIO
 from typing import Any, Dict, Tuple, Iterator, List, Sequence
 import csv
+import sys
 
 from . import error
 
@@ -26,6 +27,9 @@ class SafeDictReader:
     A CSV reader that streams records but gives nice errors if lines fail to parse.
     """
     def __init__(self, istream: TextIO, sep: str = ',') -> None:
+        # bump the built-in limits on field sizes
+        csv.field_size_limit(2**24)
+
         self.reader = csv.DictReader(istream, delimiter=sep)
 
     def __iter__(self) -> Iterator[Record]:
