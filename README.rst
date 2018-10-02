@@ -143,6 +143,36 @@ This can be useful if you're using csvdiff to transform data that's outside your
 
 For more usage options, run ``csvdiff --help`` or ``csvpatch --help``.
 
+API
+---
+
+The main entry points are the ``diff_files`` and ``diff_records`` methods:
+
+.. code-block:: python
+
+    import csvdiff
+
+    patch = csvdiff.diff_files('a.csv', 'b.csv', ['id'])
+
+    # just show the changed rows
+    print(patch['changed'])
+
+Using ``diff_records`` instead:
+
+.. code-block:: python
+
+    import csvdiff
+
+    records_a = [{'id': 1, 'name': 'Alice'},
+                 {'id': 2, 'name': 'Bob'}]
+    records_b = [{'id': 1, 'name': 'Alice'},
+                 {'id': 2, 'name': 'Jeff'}]
+
+    patch = csvdiff.diff_records(records_a, records_b, ['id'])
+    print(patch['changed'])
+
+See the matching ``patch_file`` and ``patch_records`` methods for working with patches.
+
 License
 -------
 
