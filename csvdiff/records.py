@@ -48,6 +48,9 @@ def load(file_or_stream: Any, sep: str=',') -> SafeDictReader:
 
 
 def index(record_seq: Iterator[Record], index_columns: List[str]) -> Index:
+    if not index_columns:
+        raise InvalidKeyError('must provide on or more columns to index on')
+
     try:
         obj = {
             tuple(r[i] for i in index_columns): r
