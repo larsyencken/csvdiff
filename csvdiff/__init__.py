@@ -47,7 +47,7 @@ def diff_records(from_records, to_records, index_columns):
 
 
 def patch_file(patch_stream: TextIO, fromcsv_stream: TextIO, tocsv_stream: TextIO,
-               strict: bool=True, sep: str=','):
+               strict: bool = True, sep: str = ','):
     """
     Apply the patch to the source CSV file, and save the result to the target
     file.

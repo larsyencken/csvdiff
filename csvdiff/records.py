@@ -25,7 +25,7 @@ class SafeDictReader:
     """
     A CSV reader that streams records but gives nice errors if lines fail to parse.
     """
-    def __init__(self, istream: TextIO, sep: str=',') -> None:
+    def __init__(self, istream: TextIO, sep: str = ',') -> None:
         self.reader = csv.DictReader(istream, delimiter=sep)
 
     def __iter__(self) -> Iterator[Record]:
@@ -40,7 +40,7 @@ class SafeDictReader:
         return self.reader._fieldnames
 
 
-def load(file_or_stream: Any, sep: str=',') -> SafeDictReader:
+def load(file_or_stream: Any, sep: str = ',') -> SafeDictReader:
     istream = (open(file_or_stream)
                if not hasattr(file_or_stream, 'read')
                else file_or_stream)
