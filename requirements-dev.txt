@@ -2,3 +2,4 @@
 
 pycodestyle
 mypy
+tox

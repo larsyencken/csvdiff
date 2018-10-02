@@ -36,8 +36,8 @@ lint: env
 test: lint typecheck
 	env/bin/python setup.py test
 
-test-all:
-	tox
+test-all: env
+	env/bin/tox
 
 typecheck: env
 	env/bin/mypy --ignore-missing-imports csvdiff
