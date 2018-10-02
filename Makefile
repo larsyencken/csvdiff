@@ -31,7 +31,7 @@ env: requirements.txt requirements-dev.txt
 	touch env
 
 lint: env
-	env/bin/flake8 --config=.flake8 csvdiff tests
+	env/bin/pycodestyle csvdiff tests
 
 test: lint typecheck
 	env/bin/python setup.py test
