@@ -18,6 +18,9 @@ Record = Dict[Column, Any]
 Index = Dict[PrimaryKey, Record]
 
 
+ROW_NUMBER = '_row'
+
+
 class InvalidKeyError(Exception):
     pass
 
@@ -57,8 +60,8 @@ def index(record_seq: Iterator[Record], index_columns: List[str]) -> Index:
 
     try:
         obj = {
-            tuple(r[i] for i in index_columns): r
-            for r in record_seq
+            tuple(_index_row(r, row_no, i) for i in index_columns): r
+            for row_no, r in enumerate(record_seq)
         }
 
         return obj
@@ -91,3 +94,11 @@ def sort(records: Sequence[Record]) -> List[Record]:
 def _record_key(record: Record) -> List[Tuple[Column, str]]:
     "An orderable representation of this record."
     return sorted(record.items())
+
+
+def _index_row(row: Record, row_no: int, index_col: str):
+    "Calculate the indexing key from a row."
+    if index_col == ROW_NUMBER:
+        return row_no
+
+    return row[index_col]
