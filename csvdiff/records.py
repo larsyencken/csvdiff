@@ -18,7 +18,7 @@ Record = Dict[Column, Any]
 Index = Dict[PrimaryKey, Record]
 
 
-ROW_NUMBER = '_row'
+ROW_INDEX = '_row'
 
 
 class InvalidKeyError(Exception):
@@ -36,11 +36,15 @@ class SafeDictReader:
         self.reader = csv.DictReader(istream, delimiter=sep)
 
     def __iter__(self) -> Iterator[Record]:
-        for lineno, r in enumerate(self.reader, 2):
-            if any(k is None for k in r):
+        for lineno, od in enumerate(self.reader, 2):
+            if any(k is None for k in od):
                 error.abort('CSV parse error on line {}'.format(lineno))
 
-            yield dict(r)
+            # remap to an unordered dictionary, and add line number
+            d = dict(od)
+            d[ROW_INDEX] = lineno
+
+            yield d
 
     @property
     def fieldnames(self):
@@ -60,7 +64,7 @@ def index(record_seq: Iterator[Record], index_columns: List[str]) -> Index:
 
     try:
         obj = {
-            tuple(_index_row(r, row_no, i) for i in index_columns): r
+            tuple(r[i] for i in index_columns): r
             for row_no, r in enumerate(record_seq)
         }
 
@@ -80,9 +84,15 @@ def filter_ignored(index: Index, ignore_columns: List[Column]) -> Index:
 
 
 def save(records: Sequence[Record], fieldnames: List[Column], ostream: TextIO):
+    # order records by their row number
+    records = sorted(records, key=lambda r: r.get(ROW_INDEX, sys.maxsize))
+
     writer = csv.DictWriter(ostream, fieldnames)
     writer.writeheader()
     for r in records:
+        r = r.copy()
+        del r[ROW_INDEX]
+
         writer.writerow(r)
 
 
@@ -98,7 +108,7 @@ def _record_key(record: Record) -> List[Tuple[Column, str]]:
 
 def _index_row(row: Record, row_no: int, index_col: str):
     "Calculate the indexing key from a row."
-    if index_col == ROW_NUMBER:
+    if index_col == ROW_INDEX:
         return row_no
 
     return row[index_col]
